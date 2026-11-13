@@ -4,6 +4,8 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { nodeApi } from './node';
 
+try { process.loadEnvFile('.env'); } catch { /* no .env: zero-config mode */ }
+
 const DIST = join(process.cwd(), 'dist');
 const TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',

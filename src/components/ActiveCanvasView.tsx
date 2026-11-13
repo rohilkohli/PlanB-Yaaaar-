@@ -282,7 +282,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                         : isNextUp
                         ? 'border-chartreuse/90 ring-2 ring-chartreuse/40 shadow-[0_8px_28px_rgba(184,238,48,0.18)]'
                         : 'border-white/80 shadow-glass-card'
-                    } ${isDone ? 'opacity-70 bg-white/45' : ''}`}
+                    } ${isDone ? 'bg-white/60' : ''}`}
                   >
                     {/* Diff highlight tag if adapted or Up Next */}
                     {block.isAdapted ? (
@@ -411,7 +411,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                         aria-label={isDone ? `Done, ${block.venue.name}` : `Mark done, ${block.venue.name}`}
                         className={`min-h-[44px] rounded-full text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition-transform ${
                           isDone
-                            ? 'bg-spruce/90 backdrop-blur-md text-white shadow-sm'
+                            ? 'bg-spruce text-white shadow-sm'
                             : 'bg-white/70 backdrop-blur-md text-olive-slate border border-white/80 hover:bg-white/90 shadow-2xs'
                         }`}
                       >

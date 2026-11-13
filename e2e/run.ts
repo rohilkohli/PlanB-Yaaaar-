@@ -44,7 +44,7 @@ const step = (m: string) => console.log(`  ✓ ${m}`);
 async function main() {
   let server: ReturnType<typeof spawn> | null = null;
   if (!process.env.BASE_URL) {
-    server = spawn('npx', ['tsx', 'server/index.ts'], { env: { ...process.env, PORT: String(PORT), ALLOW_TEST_CLOCK: '1', NODE_ENV: 'production' }, stdio: 'ignore' });
+    server = spawn('npx', ['tsx', 'server/index.ts'], { env: { ...process.env, PORT: String(PORT), ALLOW_TEST_CLOCK: '1', GOOGLE_PLACES_API_KEY: '', ANTHROPIC_API_KEY: '', NODE_ENV: 'production' }, stdio: 'ignore' });
   }
   try {
     await waitForServer();
@@ -158,6 +158,21 @@ async function main() {
     step(`Airplane-mode reload renders the cached plan (${loadMs} ms incl. navigation); Adapt disabled with PRD copy`);
     await page.keyboard.press('Escape');
     await context.setOffline(false);
+
+    // ---- Map Explorer (zero-config: curated fallback)
+    await page.goto(`${BASE}/map`);
+    await page.getByRole('radio', { name: 'Cafés' }).click();
+    await page.waitForSelector('section[aria-label="Places"] li');
+    assert.ok((await page.locator('section[aria-label="Places"] li').count()) >= 1, 'cafés listed');
+    await page.getByRole('radio', { name: 'Hostels' }).click();
+    await page.getByText('Connect a Google Places key to see hostels and agencies.').waitFor();
+    await page.getByRole('radio', { name: 'Best of best' }).click();
+    await page.locator('section[aria-label="Places"] li button').first().click();
+    await page.getByRole('dialog').waitFor();
+    await page.screenshot({ path: `${SHOTS}/08-map.png` });
+    await axeAudit(page, 'map explorer');
+    await page.keyboard.press('Escape');
+    step('Map Explorer: categories, curated fallback, details sheet');
 
     // ---- Reset data
     await page.goto(`${BASE}/preferences`);

@@ -149,7 +149,7 @@ export async function fetchCandidates(opts: {
         headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': FIELD_MASK },
         body: JSON.stringify({
           includedTypes: g.types,
-          maxResultCount: 12,
+          maxResultCount: 20,
           rankPreference: 'POPULARITY',
           locationRestriction: { circle: { center: { latitude: opts.center.lat, longitude: opts.center.lng }, radius } }
         })
@@ -162,7 +162,7 @@ export async function fetchCandidates(opts: {
       for (const p of (r.value.places ?? []) as GPlace[]) {
         if (seen.has(p.id)) continue;
         seen.add(p.id);
-        if ((p.rating ?? 0) < 4.0 && (p.userRatingCount ?? 0) > 20) continue; // rating-vetted
+        if ((p.rating ?? 0) < 4.2 || (p.userRatingCount ?? 0) < 150) continue; // rating- and volume-vetted
         const v = normalisePlace(p, opts.cityId, weekday, opts.currency, fetchedAt);
         if (v) out.push(v);
       }
@@ -170,8 +170,8 @@ export async function fetchCandidates(opts: {
     return { out, anyOk: settled.some(r => r.status === 'fulfilled') };
   };
 
-  let { out, anyOk } = await run(opts.radiusMeters ?? 3000);
-  if (anyOk && out.length < 12) {
+  let { out, anyOk } = await run(opts.radiusMeters ?? 6000);
+  if (anyOk && out.length < 15) {
     // Sparse area → expand radius to 10 km (PRD FR-003).
     ({ out } = await run(10000));
   }

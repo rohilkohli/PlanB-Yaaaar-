@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { CalibrationView, type BuildMeta } from './components/CalibrationView';
 import { ActiveCanvasView } from './components/ActiveCanvasView';
 import { ExploreView } from './components/ExploreView';
+import { MapExplorerView } from './components/MapExplorerView';
+import { CITIES } from './data/placesData';
 import { NavigationDock } from './components/NavigationDock';
 import { GeneratingTransition } from './components/GeneratingTransition';
 import { AdaptBottomSheet, type AdaptSubmit } from './components/AdaptBottomSheet';
@@ -59,14 +61,14 @@ export const App: React.FC = () => {
   const planIsToday = !!plan && plan.calibration.date === todayIn(plan.city.timezone);
   const params = new URLSearchParams(route.search);
   const wantsNew = params.has('new');
-  const base: 'calibrate' | 'today' | 'explore' =
-    route.path === '/explore' ? 'explore' : route.path === '/today' || route.path === '/preferences' ? (plan ? 'today' : 'calibrate') : 'calibrate';
+  const base: 'calibrate' | 'today' | 'explore' | 'map' =
+    route.path === '/explore' ? 'explore' : route.path === '/map' ? 'map' : route.path === '/today' || route.path === '/preferences' ? (plan ? 'today' : 'calibrate') : 'calibrate';
 
   useEffect(() => {
     if (!ready) return;
     if (route.path === '/' && plan && planIsToday && !wantsNew) navigate('/today', { replace: true });
     else if (route.path === '/today' && !plan) navigate('/', { replace: true });
-    else if (!['/', '/today', '/preferences', '/explore'].includes(route.path)) navigate(plan && planIsToday ? '/today' : '/', { replace: true });
+    else if (!['/', '/today', '/preferences', '/explore', '/map'].includes(route.path)) navigate(plan && planIsToday ? '/today' : '/', { replace: true });
   }, [ready, route.path, plan, planIsToday, wantsNew]);
 
   const isPrefsOpen = route.path === '/preferences';
@@ -234,7 +236,7 @@ export const App: React.FC = () => {
 
         <UndoToast undoState={undoState} onUndo={handleUndo} onDismiss={() => storage.dismissUndo()} />
 
-        {tab !== 'calibrate' && <div className="px-5 pt-2"><OfflineBadge isOffline={isOffline} /></div>}
+        {tab !== 'calibrate' && tab !== 'map' && <div className="px-5 pt-2"><OfflineBadge isOffline={isOffline} /></div>}
 
         {tab === 'calibrate' && (
           <CalibrationView
@@ -266,13 +268,21 @@ export const App: React.FC = () => {
           />
         )}
 
+        {tab === 'map' && (
+          <MapExplorerView
+            center={plan?.calibration.anchorCoords ?? CITIES[0].coords}
+            cityName={plan?.city.name ?? CITIES[0].name}
+            onBack={() => navigate(plan ? '/today' : '/')}
+          />
+        )}
+
         {tab === 'explore' && (
           <ExploreView onLoadCity={handleLoadCurated} onBackToPlan={() => navigate(plan ? '/today' : '/')} />
         )}
 
         <NavigationDock
           activeTab={tab}
-          onSelectTab={t => navigate(t === 'calibrate' ? '/?new=1' : t === 'today' ? (plan ? '/today' : '/') : '/explore')}
+          onSelectTab={t => navigate(t === 'calibrate' ? '/?new=1' : t === 'today' ? (plan ? '/today' : '/') : t === 'map' ? '/map' : '/explore')}
           onOpenAdapt={() => navigate('/today#adapt')}
           hasActivePlan={!!plan}
         />

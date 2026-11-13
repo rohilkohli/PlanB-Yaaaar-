@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Sliders, Compass, Sparkles, Globe } from 'lucide-react';
+import { Sliders, Compass, Sparkles, Globe, Map as MapIcon } from 'lucide-react';
 
 interface NavigationDockProps {
-  activeTab: 'calibrate' | 'today' | 'explore';
-  onSelectTab: (tab: 'calibrate' | 'today' | 'explore') => void;
+  activeTab: 'calibrate' | 'today' | 'explore' | 'map';
+  onSelectTab: (tab: 'calibrate' | 'today' | 'explore' | 'map') => void;
   onOpenAdapt: () => void;
   hasActivePlan: boolean;
 }
@@ -103,6 +103,22 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
           {hasActivePlan && (
             <span aria-hidden="true" className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-chartreuse ring-1 ring-white" />
           )}
+        </button>
+
+        {/* Map Explorer */}
+        <button
+          type="button"
+          onClick={() => onSelectTab('map')}
+          title="Nearby map"
+          aria-label="Nearby map"
+          aria-current={activeTab === 'map' ? 'page' : undefined}
+          className={`flex items-center justify-center rounded-full transition-all duration-200 active:scale-95 w-11 h-11 ${
+            activeTab === 'map'
+              ? 'bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 border border-white/60 text-obsidian ring-2 ring-chartreuse/40'
+              : 'text-olive-slate hover:text-obsidian hover:bg-white/60'
+          }`}
+        >
+          <MapIcon className={`transition-all duration-200 ${isScrolled ? 'w-4 h-4' : 'w-5 h-5'}`} />
         </button>
 
         {/* Explore Curated Gallery Icon Only */}

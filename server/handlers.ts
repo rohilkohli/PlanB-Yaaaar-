@@ -6,6 +6,7 @@ import { autocomplete, reverseGeocode } from './places';
 import { CITIES } from '../src/data/placesData';
 import { fetchWeather } from './weather';
 import { recordEvent } from './events';
+import { discover, placeDetails, DISCOVER_CATEGORIES, type DiscoverCategory } from './discover';
 
 async function limited(req: ApiRequest, bucket: string, limit: number): Promise<ApiResponse | null> {
   const r = await checkLimit(req.ip, bucket, limit);
@@ -61,6 +62,19 @@ export async function handle(req: ApiRequest): Promise<ApiResponse> {
         const lat = Number(req.query.get('lat')); const lng = Number(req.query.get('lng'));
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) return json(400, { error: 'bad_request' });
         return json(200, await fetchWeather(lat, lng));
+      }
+      case 'GET /api/places/discover': {
+        const lat = Number(req.query.get('lat')); const lng = Number(req.query.get('lng'));
+        const category = req.query.get('category') as DiscoverCategory;
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || !DISCOVER_CATEGORIES.includes(category)) return json(400, { error: 'bad_request' });
+        const lim = await limited(req, 'discover', 120); if (lim) return lim;
+        return json(200, await discover({ center: { lat, lng }, category, radiusM: Number(req.query.get('radius')) || undefined }));
+      }
+      case 'GET /api/places/details': {
+        const id = req.query.get('id') || '';
+        const lim = await limited(req, 'details', 120); if (lim) return lim;
+        const d = await placeDetails(id).catch(() => null);
+        return d ? json(200, { details: d }) : json(200, { details: null });
       }
       case 'POST /api/events': {
         const lim = await limited(req, 'events', e.limitEvents); if (lim) return lim;

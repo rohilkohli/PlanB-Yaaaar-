@@ -98,6 +98,8 @@ export function scoreVenue(v: VerifiedVenue, o: ScoreOpts): number {
   s += catIdx >= 0 ? 6 - catIdx : 0;
   if (v.timeSlot === o.slot) s += 3;
   s += (v.rating - 4) * 2;
+  // Popular, well-reviewed places first (log-scaled so a 170k-review landmark doesn't swamp everything).
+  s += Math.max(0, Math.min(5, (Math.log10(1 + (v.reviewsCount || 0)) - 2) * 1.8));
 
   const budget = priceRank(o.calib.budget);
   const price = priceRank(v.priceLevel);
@@ -134,8 +136,8 @@ export function scoreVenue(v: VerifiedVenue, o: ScoreOpts): number {
 
   // Shorter legs are always kinder.
   const wm = walkMinutes(o.from, v.coords);
-  s -= wm / 12;
-  if (wm > o.maxWalk) s -= 1.5;
+  s -= Math.min(4, wm / 15);
+  if (wm > o.maxWalk) s -= 1;
   return s;
 }
 
@@ -614,7 +616,7 @@ export function swapAlternatives(
   let noNearby = false;
   if (ranked.length < 2) {
     noNearby = true;
-    ranked = rank(Math.max(cap, 60));
+    ranked = rank(Math.max(cap, 240));
   }
 
   // Two distinct sub-categories, both different from the rejected block (PRD FR-005).

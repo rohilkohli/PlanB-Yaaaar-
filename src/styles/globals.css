@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #F8FBF1;
+    color: #191D17;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 16px);
+  }
+}
+
+/* Hide scrollbars for tactile horizontal pill rails */
+.no-scrollbar::-webkit-scrollbar,
+::-webkit-scrollbar {
+  display: none;
+  width: 0px;
+  background: transparent;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Glassmorphism Helpers */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 8px 32px 0 rgba(25, 29, 23, 0.05);
+}
+
+.glass-panel-active {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(184, 238, 48, 0.85);
+  box-shadow: 0 10px 28px -2px rgba(184, 238, 48, 0.25);
+}
+
+.glass-cta {
+  background: linear-gradient(135deg, rgba(184, 238, 48, 0.95), rgba(163, 215, 15, 0.92));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 24px -2px rgba(184, 238, 48, 0.38);
+}
+
+.glass-pill {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+}
+
+/* Animations */
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideDown {
+  from { transform: translate(-50%, -100%); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+button, a {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+

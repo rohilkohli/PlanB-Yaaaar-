@@ -1,14 +1,9 @@
 import React, { useState } from 'react';
-import { 
-  X, 
-  Check, 
-  Sliders, 
-  Trash2, 
-  WifiOff
-} from 'lucide-react';
-import { TravelerPreferences } from '../types/itinerary';
+import { Trash2, WifiOff, ShieldCheck } from 'lucide-react';
+import type { TravelerPreferences } from '../types/itinerary';
+import { BottomSheet, GlassButton, PrimaryButton, RadioGroup } from './ui';
 
-interface GuardrailsModalProps {
+interface Props {
   preferences: TravelerPreferences;
   isSimulatedOffline: boolean;
   onSave: (prefs: TravelerPreferences) => void;
@@ -17,248 +12,132 @@ interface GuardrailsModalProps {
   onClose: () => void;
 }
 
-export const GuardrailsModal: React.FC<GuardrailsModalProps> = ({
-  preferences,
-  isSimulatedOffline,
-  onSave,
-  onToggleSimulateOffline,
-  onResetAllData,
-  onClose
-}) => {
+const DIET = [
+  { id: 'vegetarian', label: 'Vegetarian' },
+  { id: 'alcohol_free', label: 'Alcohol-free venues' },
+  { id: 'counter_preferred', label: 'Counter seating' },
+  { id: 'quiet_corner', label: 'Quiet corners' }
+];
+
+export const GuardrailsModal: React.FC<Props> = ({ preferences, isSimulatedOffline, onSave, onToggleSimulateOffline, onResetAllData, onClose }) => {
   const [mobility, setMobility] = useState(preferences.mobility || 'stairs_okay');
-  const [maxStride, setMaxStride] = useState(preferences.maxStrideMinutes || 25);
-  const [dietary, setDietary] = useState<string[]>(preferences.dietary || ['counter_preferred', 'no_reservations']);
+  const [maxStride, setMaxStride] = useState<'15' | '25' | '40'>(String(preferences.maxStrideMinutes || 25) as '15' | '25' | '40');
+  const [dietary, setDietary] = useState<string[]>(preferences.dietary || []);
   const [units, setUnits] = useState<'km' | 'mi'>(preferences.units || 'km');
-  const [afterDark, setAfterDark] = useState<'before_dark' | 'well_lit' | 'anywhere'>(preferences.afterDarkMode || 'well_lit');
+  const [afterDark, setAfterDark] = useState(preferences.afterDarkMode || 'well_lit');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  const toggleDietary = (item: string) => {
-    setDietary(prev =>
-      prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
-    );
-  };
+  const toggle = (id: string) => setDietary(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
 
-  const handleSave = () => {
-    onSave({
-      mobility,
-      maxStrideMinutes: maxStride,
-      dietary,
-      units,
-      afterDarkMode: afterDark
-    });
-    onClose();
+  const save = () => {
+    onSave({ mobility, maxStrideMinutes: Number(maxStride) as 15 | 25 | 40, dietary, units, afterDarkMode: afterDark });
+    setSaved(true);
+    setTimeout(onClose, 700);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-obsidian-deep/40 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg bg-canvas/90 backdrop-blur-2xl rounded-t-4xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-float border border-white/80 overflow-hidden">
-        {/* Header */}
-        <div className="px-5 py-4 border-b border-card-border/60 flex items-center justify-between bg-white/80 backdrop-blur-md">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-md border border-white/80 flex items-center justify-center text-obsidian">
-              <Sliders className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="font-bold text-base text-obsidian">Preferences</h2>
-              <p className="text-[11px] text-olive-slate">Saved on your device</p>
-            </div>
+    <BottomSheet title="Preferences" subtitle="Saved on this device. Applied to every plan." onClose={onClose}>
+      <div className="space-y-5">
+        <section aria-labelledby="g-mob">
+          <h3 id="g-mob" className="text-xs font-bold text-obsidian mb-2">Walking & mobility</h3>
+          <RadioGroup
+            label="Walking and mobility"
+            variant="segmented"
+            value={mobility}
+            onChange={setMobility}
+            options={[
+              { value: 'stairs_okay', label: 'No limits' },
+              { value: 'avoid_hills', label: 'Avoid hills' },
+              { value: 'step_free', label: 'Step-free' },
+              { value: 'transit_first', label: 'Short walks' }
+            ]}
+          />
+          <h4 className="text-xs font-semibold text-olive-slate mt-3 mb-1.5">Longest walk between stops</h4>
+          <RadioGroup
+            label="Longest walk"
+            variant="segmented"
+            value={maxStride}
+            onChange={setMaxStride}
+            options={[{ value: '15', label: '15 min' }, { value: '25', label: '25 min' }, { value: '40', label: '40 min' }]}
+          />
+        </section>
+
+        <section aria-labelledby="g-diet">
+          <h3 id="g-diet" className="text-xs font-bold text-obsidian mb-2">Dining</h3>
+          <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby="g-diet">
+            {DIET.map(d => {
+              const on = dietary.includes(d.id);
+              return (
+                <button key={d.id} type="button" aria-pressed={on} onClick={() => toggle(d.id)}
+                  className={`min-h-[48px] px-3 rounded-2xl border text-xs font-semibold text-left transition-all ${on ? 'bg-white border-chartreuse ring-2 ring-chartreuse/40 text-obsidian' : 'bg-white/65 border-white/80 text-olive-slate'}`}>
+                  {d.label}
+                </button>
+              );
+            })}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/70 backdrop-blur-md border border-white/80 flex items-center justify-center text-obsidian hover:bg-white/90 transition-colors shadow-2xs"
-          >
-            <X className="w-4 h-4" />
+        </section>
+
+        <section aria-labelledby="g-eve">
+          <h3 id="g-eve" className="text-xs font-bold text-obsidian mb-2">Evening</h3>
+          <RadioGroup
+            label="Evening preference"
+            variant="segmented"
+            value={afterDark}
+            onChange={setAfterDark}
+            options={[{ value: 'before_dark', label: 'Before dark' }, { value: 'well_lit', label: 'Main streets' }, { value: 'anywhere', label: 'Anytime' }]}
+          />
+        </section>
+
+        <section aria-labelledby="g-units">
+          <h3 id="g-units" className="text-xs font-bold text-obsidian mb-2">Units</h3>
+          <RadioGroup label="Distance units" variant="segmented" value={units} onChange={setUnits}
+            options={[{ value: 'km', label: 'Kilometres' }, { value: 'mi', label: 'Miles' }]} />
+        </section>
+
+        <section className="rounded-2xl bg-white/70 border border-white/80 p-3.5 flex gap-2.5 text-xs text-olive-slate">
+          <ShieldCheck className="w-4 h-4 text-spruce shrink-0 mt-0.5" aria-hidden="true" />
+          <p>No account, no tracking. Your plan and preferences stay on this device and are deleted after 14 days. Location is only used when you ask for it.</p>
+        </section>
+
+        <div className="rounded-2xl bg-white/70 border border-white/80 p-3.5 flex items-center justify-between gap-3">
+          <span className="flex items-center gap-2.5 min-w-0">
+            <WifiOff className="w-4 h-4 text-olive-slate shrink-0" aria-hidden="true" />
+            <span>
+              <span id="sim-off" className="text-xs font-bold text-obsidian block">Simulate offline mode</span>
+              <span className="text-[11px] text-olive-slate">Check how your saved plan behaves</span>
+            </span>
+          </span>
+          <button type="button" role="switch" aria-checked={isSimulatedOffline} aria-labelledby="sim-off" onClick={onToggleSimulateOffline}
+            className="w-14 h-11 flex items-center justify-center shrink-0">
+            <span className={`w-11 h-6 rounded-full relative p-0.5 transition-colors ${isSimulatedOffline ? 'bg-chartreuse' : 'bg-card-border'}`}>
+              <span className={`block w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${isSimulatedOffline ? 'translate-x-5' : ''}`} />
+            </span>
           </button>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="p-5 overflow-y-auto space-y-5">
-          {/* Walking & Mobility */}
-          <div>
-            <span className="text-xs font-bold text-obsidian block mb-2">Walking & Mobility</span>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {[
-                { id: 'stairs_okay', label: 'Stairs okay' },
-                { id: 'avoid_hills', label: 'Avoid steep hills' },
-                { id: 'transit_first', label: 'Prefer transit' }
-              ].map(opt => (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setMobility(opt.id as any)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                    mobility === opt.id
-                      ? 'bg-obsidian/90 backdrop-blur-md text-white shadow-xs'
-                      : 'bg-white/70 backdrop-blur-md text-obsidian border border-white/80 hover:bg-white/90'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Max Walk */}
-            <div className="bg-white/70 backdrop-blur-md rounded-2xl p-3 border border-white/80 shadow-2xs">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-obsidian">Max walk between stops</span>
-                <span className="text-xs font-bold text-spruce">{maxStride} min</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {[15, 25, 40].map(stride => (
-                  <button
-                    key={stride}
-                    type="button"
-                    onClick={() => setMaxStride(stride as any)}
-                    className={`py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                      maxStride === stride
-                        ? 'bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian font-bold shadow-xs'
-                        : 'bg-white/60 backdrop-blur-md text-olive-slate border border-white/60 hover:bg-white/80'
-                    }`}
-                  >
-                    {stride} min
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Dining Preferences */}
-          <div>
-            <span className="text-xs font-bold text-obsidian block mb-2">Dining Preferences</span>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: 'counter_preferred', label: 'Counter seating' },
-                { id: 'quiet_corner', label: 'Quiet corner tables' },
-                { id: 'no_reservations', label: 'No reservations' },
-                { id: 'vegetarian', label: 'Vegetarian friendly' }
-              ].map(diet => {
-                const isSelected = dietary.includes(diet.id);
-                return (
-                  <button
-                    key={diet.id}
-                    type="button"
-                    onClick={() => toggleDietary(diet.id)}
-                    className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between text-left transition-all ${
-                      isSelected
-                        ? 'bg-white/90 backdrop-blur-md border-chartreuse/80 ring-1 ring-chartreuse/40 text-obsidian shadow-2xs'
-                        : 'bg-white/65 backdrop-blur-md border-white/80 text-olive-slate hover:text-obsidian'
-                    }`}
-                  >
-                    <span className="truncate pr-1">{diet.label}</span>
-                    <span className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${isSelected ? 'bg-chartreuse text-obsidian' : 'bg-white/60 text-transparent'}`}>
-                      <Check className="w-2.5 h-2.5 stroke-[3]" />
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Evening */}
-          <div>
-            <span className="text-xs font-bold text-obsidian block mb-2">Evening Preference</span>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: 'before_dark', label: 'Before dark' },
-                { id: 'well_lit', label: 'Main streets' },
-                { id: 'anywhere', label: 'Anytime' }
-              ].map(item => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setAfterDark(item.id as any)}
-                  className={`py-2 px-2 rounded-xl border text-xs font-semibold text-center transition-all ${
-                    afterDark === item.id
-                      ? 'bg-obsidian/90 backdrop-blur-md text-white border-obsidian shadow-xs'
-                      : 'bg-white/70 backdrop-blur-md text-olive-slate border border-white/80 hover:bg-white/90'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Units */}
-          <div>
-            <span className="text-xs font-bold text-obsidian block mb-2">Units</span>
-            <div className="inline-flex rounded-xl bg-white/70 backdrop-blur-md border border-white/80 p-1">
-              <button
-                type="button"
-                onClick={() => setUnits('km')}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  units === 'km' ? 'bg-chartreuse text-obsidian shadow-xs' : 'text-olive-slate'
-                }`}
-              >
-                Kilometers (km)
-              </button>
-              <button
-                type="button"
-                onClick={() => setUnits('mi')}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  units === 'mi' ? 'bg-chartreuse text-obsidian shadow-xs' : 'text-olive-slate'
-                }`}
-              >
-                Miles (mi)
-              </button>
-            </div>
-          </div>
-
-          {/* Offline Mode Toggle */}
-          <div className="bg-white/70 backdrop-blur-md rounded-2xl p-3.5 border border-white/80 flex items-center justify-between shadow-2xs">
-            <div className="flex items-center gap-2.5">
-              <WifiOff className="w-4 h-4 text-olive-slate" />
-              <div>
-                <span className="text-xs font-bold text-obsidian block">Simulate offline mode</span>
-                <span className="text-[11px] text-olive-slate">Test offline caching</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={onToggleSimulateOffline}
-              className={`w-11 h-6 rounded-full transition-colors relative p-0.5 ${
-                isSimulatedOffline ? 'bg-chartreuse' : 'bg-card-border'
-              }`}
-            >
-              <span
-                className={`block w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform ${
-                  isSimulatedOffline ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
+        <div className="pt-1 border-t border-card-border/60">
+          {!confirmDelete ? (
+            <button type="button" onClick={() => setConfirmDelete(true)}
+              className="w-full min-h-[48px] rounded-2xl border border-red-300 bg-red-50 text-red-800 text-xs font-bold flex items-center justify-center gap-1.5">
+              <Trash2 className="w-4 h-4" aria-hidden="true" /><span>Reset & delete all my data</span>
             </button>
-          </div>
-
-          {/* Clear Data */}
-          <div className="pt-2 border-t border-card-border/60">
-            <button
-              type="button"
-              onClick={onResetAllData}
-              className="w-full py-2.5 px-3 rounded-2xl border border-red-200/80 bg-red-50/50 backdrop-blur-sm text-red-600 hover:bg-red-50 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Reset all saved data</span>
-            </button>
-          </div>
+          ) : (
+            <div role="alert" className="rounded-2xl border border-red-300 bg-red-50 p-3 space-y-2">
+              <p className="text-xs text-red-900 font-semibold">Delete your saved plan and preferences from this device?</p>
+              <div className="grid grid-cols-2 gap-2">
+                <GlassButton onClick={() => setConfirmDelete(false)}>Keep</GlassButton>
+                <button type="button" onClick={onResetAllData} className="min-h-[44px] rounded-2xl bg-red-700 text-white text-sm font-bold">Delete all</button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 bg-white/80 backdrop-blur-md border-t border-card-border/60 flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-11 px-4 rounded-xl bg-white/70 backdrop-blur-md border border-white/80 text-obsidian text-xs font-semibold hover:bg-white/90"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="flex-1 h-11 rounded-xl bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold flex items-center justify-center gap-1 shadow-glass-cta active:scale-98 hover:shadow-[0_6px_20px_rgba(184,238,48,0.4)]"
-          >
-            Save Preferences
-          </button>
+        <div className="flex items-center gap-2.5 pt-1" aria-live="polite">
+          <GlassButton onClick={onClose} className="px-4">Cancel</GlassButton>
+          <PrimaryButton onClick={save} className="flex-1">{saved ? 'Saved on this device ✓' : 'Save preferences'}</PrimaryButton>
         </div>
       </div>
-    </div>
+    </BottomSheet>
   );
 };

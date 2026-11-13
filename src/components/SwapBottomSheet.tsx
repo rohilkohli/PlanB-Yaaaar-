@@ -1,130 +1,100 @@
-import React, { useState } from 'react';
-import { X, Clock, AlertTriangle, ArrowRight } from 'lucide-react';
-import { DayPlan, PlanBlock, VerifiedVenue } from '../types/itinerary';
-import { driftlessEngine } from '../services/engine';
+import React, { useEffect, useState } from 'react';
+import { AlertTriangle, ArrowRight, Clock, CloudOff } from 'lucide-react';
+import type { DayPlan, PlanBlock, VerifiedVenue } from '../types/itinerary';
+import { openUntilLabel } from '../core/hours';
+import { swapRemote } from '../services/planService';
+import { BottomSheet, PrimaryButton } from './ui';
 
-interface SwapBottomSheetProps {
+interface Props {
   currentPlan: DayPlan;
   block: PlanBlock;
-  onSwapConfirm: (blockId: string, newVenue: VerifiedVenue) => void;
+  isOffline: boolean;
+  onSwapConfirm: (blockId: string, newVenue: VerifiedVenue, reason: string) => void;
   onClose: () => void;
 }
 
-export const SwapBottomSheet: React.FC<SwapBottomSheetProps> = ({
-  currentPlan,
-  block,
-  onSwapConfirm,
-  onClose
-}) => {
-  const [selectedReason, setSelectedReason] = useState<string>('vibe');
-  const [alternatives, setAlternatives] = useState<VerifiedVenue[]>(() =>
-    driftlessEngine.getSwapAlternatives(currentPlan, block.blockId, 'vibe')
-  );
+const REASONS = [
+  { id: 'vibe', label: 'Not my vibe' },
+  { id: 'distance', label: 'Too far' },
+  { id: 'closed', label: 'It’s closed' },
+  { id: 'food', label: 'Food instead' }
+] as const;
 
-  const handleReasonClick = (reason: string) => {
-    setSelectedReason(reason);
-    const refreshed = driftlessEngine.getSwapAlternatives(currentPlan, block.blockId, reason);
-    setAlternatives(refreshed);
-  };
+export const SwapBottomSheet: React.FC<Props> = ({ currentPlan, block, isOffline, onSwapConfirm, onClose }) => {
+  const [reason, setReason] = useState<string>('vibe');
+  const [alts, setAlts] = useState<VerifiedVenue[] | null>(null);
+  const [noBackup, setNoBackup] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    setAlts(null); setError(null);
+    swapRemote(currentPlan, block.blockId, reason)
+      .then(r => { if (live) { setAlts(r.alternatives); setNoBackup(r.noNearbyBackup); } })
+      .catch(e => { if (live) { setAlts([]); setError(e?.message || 'Couldn’t load alternatives.'); } });
+    return () => { live = false; };
+  }, [reason, block.blockId, currentPlan]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-obsidian-deep/40 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md bg-white/85 backdrop-blur-2xl rounded-t-4xl shadow-[0_-16px_40px_rgba(0,0,0,0.08)] px-5 pt-3.5 pb-8 flex flex-col max-h-[92vh] overflow-y-auto animate-slide-up border-t border-white/80">
-        {/* Drag Pill Handle */}
-        <div className="w-full flex justify-center pb-3">
-          <div className="w-12 h-1.5 bg-card-border rounded-full" />
-        </div>
-
-        {/* Clean Header */}
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <h2 className="font-bold text-lg text-obsidian">
-              Replace "{block.venue.name}"
-            </h2>
-            <p className="text-xs text-olive-slate">
-              Choose an alternative nearby.
-            </p>
-          </div>
+    <BottomSheet title={`Replace ${block.venue.name}`} subtitle="Two nearby options. The rest of your day stays put." onClose={onClose}>
+      <div role="radiogroup" aria-label="Why swap" className="flex items-center gap-2 overflow-x-auto pb-2 mb-3 no-scrollbar">
+        {REASONS.map(r => (
           <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/70 backdrop-blur-md border border-white/80 text-obsidian flex items-center justify-center text-xs hover:bg-white/90 shadow-2xs"
+            key={r.id} type="button" role="radio" aria-checked={reason === r.id} onClick={() => setReason(r.id)}
+            className={`shrink-0 min-h-[44px] px-4 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${
+              reason === r.id ? (r.id === 'closed' ? 'bg-red-700 text-white' : 'bg-obsidian text-white') : 'bg-white/80 text-obsidian border border-white/80 hover:bg-white'
+            }`}
           >
-            <X className="w-4 h-4" />
+            {r.id === 'closed' && <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />}
+            {r.label}
           </button>
-        </div>
-
-        {/* Reason Feedback Chips */}
-        <div className="mb-4">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-            {[
-              { id: 'vibe', label: 'Different vibe' },
-              { id: 'distance', label: 'Too far' },
-              { id: 'closed', label: "Closed" },
-              { id: 'food', label: 'Food instead' }
-            ].map(r => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => handleReasonClick(r.id)}
-                className={`shrink-0 h-8 px-3 rounded-full text-xs font-semibold transition-all flex items-center gap-1 ${
-                  selectedReason === r.id
-                    ? r.id === 'closed' ? 'bg-red-600 text-white' : 'bg-obsidian/90 backdrop-blur-md text-white shadow-sm'
-                    : 'bg-white/70 backdrop-blur-md text-olive-slate border border-white/80 hover:bg-white/90 shadow-2xs'
-                }`}
-              >
-                {r.id === 'closed' && <AlertTriangle className="w-3 h-3" />}
-                <span>{r.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Alternatives List */}
-        <div className="space-y-3">
-          {alternatives.length === 0 ? (
-            <div className="p-6 text-center bg-white/60 backdrop-blur-md border border-white/80 rounded-2xl text-xs text-olive-slate">
-              No other nearby places found.
-            </div>
-          ) : (
-            alternatives.map(alt => (
-              <article
-                key={alt.placeId}
-                className="bg-white/70 backdrop-blur-xl rounded-2xl p-3.5 border border-white/80 flex flex-col gap-2.5 shadow-glass-card"
-              >
-                <div className="relative w-full h-32 rounded-xl overflow-hidden border border-white/60">
-                  <img src={alt.imageUrl} alt={alt.name} className="w-full h-full object-cover" />
-                  <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-md text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    <span>{alt.openHoursToday.split('·')[0]}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] uppercase font-bold text-olive-slate">{alt.category}</span>
-                      <span className="text-[10px] text-olive-slate/60">·</span>
-                      <span className="text-[10px] text-olive-slate">{alt.neighborhood}</span>
-                    </div>
-                    <h3 className="font-bold text-sm text-obsidian">{alt.name}</h3>
-                    <p className="text-xs text-olive-slate mt-0.5 line-clamp-2">{alt.whyItFits}</p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => onSwapConfirm(block.blockId, alt)}
-                  className="w-full h-10 rounded-full bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold flex items-center justify-center gap-1.5 active:scale-98 transition-all shadow-glass-cta hover:shadow-[0_6px_20px_rgba(184,238,48,0.4)]"
-                >
-                  <span>Select this place</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </article>
-            ))
-          )}
-        </div>
+        ))}
       </div>
-    </div>
+
+      {isOffline && (
+        <div role="alert" className="mb-3 p-3 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 text-xs flex gap-2">
+          <CloudOff className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+          <p>You’re offline — reconnect to swap this stop. Your current plan is saved below.</p>
+        </div>
+      )}
+
+      <div className="space-y-3" aria-live="polite" aria-busy={alts === null}>
+        {alts === null && [0, 1].map(i => (
+          <div key={i} className="h-44 rounded-2xl bg-white/60 border border-white/80 animate-pulse" aria-hidden="true" />
+        ))}
+
+        {alts && alts.length === 0 && (
+          <div className="p-5 text-center bg-white/70 border border-white/80 rounded-2xl text-sm text-olive-slate">
+            {error || 'No open backup nearby right now. Your current stop stays in place.'}
+          </div>
+        )}
+
+        {alts && noBackup && alts.length > 0 && (
+          <p className="text-xs text-olive-slate px-1">Fewer options close by, so these are a little further away.</p>
+        )}
+
+        {alts?.map(alt => (
+          <article key={alt.placeId} className="bg-white/75 backdrop-blur-xl rounded-2xl p-3.5 border border-white/80 flex flex-col gap-2.5 shadow-glass-card">
+            {alt.imageUrl && (
+              <div className="relative w-full h-28 rounded-xl overflow-hidden border border-white/60">
+                <img src={alt.imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase font-bold text-olive-slate tracking-wide">{alt.category} · {alt.neighborhood}</p>
+              <h3 className="font-bold text-sm text-obsidian">{alt.name}</h3>
+              <p className="text-xs text-olive-slate mt-0.5 line-clamp-2">{alt.whyItFits}</p>
+              <p className="text-[11px] text-olive-slate mt-1 flex items-center gap-1">
+                <Clock className="w-3 h-3" aria-hidden="true" />
+                Open until {openUntilLabel(alt)} · {alt.source === 'google_places' ? 'Verified via Google Places' : 'Curated listing'}
+              </p>
+            </div>
+            <PrimaryButton disabled={isOffline} onClick={() => onSwapConfirm(block.blockId, alt, reason)} className="w-full">
+              <span>Replace with this</span><ArrowRight className="w-4 h-4" aria-hidden="true" />
+            </PrimaryButton>
+          </article>
+        ))}
+      </div>
+    </BottomSheet>
   );
 };

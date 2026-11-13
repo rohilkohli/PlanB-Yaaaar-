@@ -14,6 +14,8 @@ export interface Coordinates {
   lng: number;
 }
 
+export type DataSource = 'google_places' | 'curated';
+
 export interface CityData {
   id: string;
   name: string;
@@ -27,7 +29,7 @@ export interface CityData {
 }
 
 export interface TravelerPreferences {
-  mobility: 'stairs_okay' | 'avoid_hills' | 'transit_first';
+  mobility: 'stairs_okay' | 'avoid_hills' | 'transit_first' | 'step_free';
   maxStrideMinutes: 15 | 25 | 40;
   dietary: string[];
   units: 'km' | 'mi';
@@ -47,6 +49,10 @@ export interface CalibrationData {
   afterDark: AfterDarkComfort;
   social: SocialAppetite;
   sunsetTime: string;
+  /** Free-text location the traveler typed / GPS-resolved neighbourhood label. */
+  locationLabel?: string;
+  /** IANA timezone of the destination. */
+  timezone?: string;
 }
 
 export interface VerifiedVenue {
@@ -76,6 +82,14 @@ export interface VerifiedVenue {
   imageUrl: string;
   mapsUrl: string;
   appleMapsUrl: string;
+  /** Where the venue facts came from. Curated entries are NOT Google-verified. */
+  source?: DataSource;
+  /** ISO timestamp of the last upstream fetch (PRD §27: 24h refresh on raw Places metadata). */
+  verifiedAt?: string;
+  /** non_veg | alcohol | steep | steps */
+  tags?: string[];
+  /** Exact open periods today as [openMin, closeMin] pairs (live Places data; handles lunch/dinner gaps). */
+  periods?: Array<[number, number]>;
 }
 
 export interface PlanBlock {
@@ -93,6 +107,19 @@ export interface PlanBlock {
   isIndoor: boolean;
   isAdapted?: boolean;
   adaptationReason?: string;
+  /** One-line rationale tied to the traveler's dials + hours, e.g. "Quiet setting · Open until 6:00 PM". */
+  fitLine?: string;
+  /** Minutes the traveler waits for the venue to open (included in time label). */
+  isBonus?: boolean;
+}
+
+export interface AdaptationSummary {
+  scenarios: string[];
+  changedBlockIds: string[];
+  keptBlockIds: string[];
+  removedNames: string[];
+  at: string;
+  message: string;
 }
 
 export interface DayPlan {
@@ -107,6 +134,14 @@ export interface DayPlan {
   adaptedAt?: string;
   activeScenarios?: string[];
   optionalNote?: string;
+  lastAdaptation?: AdaptationSummary;
+  /** True when produced by the deterministic planner (LLM skipped/failed or kill-switch on). */
+  usedFallback?: boolean;
+  dataSource?: DataSource;
+  /** All blocks done: offer one optional bonus stop or tomorrow's setup. */
+  allDone?: boolean;
+  /** Too late for a daylight-safe plan today; offer tomorrow's setup. */
+  needsTomorrow?: boolean;
 }
 
 export interface UndoState {

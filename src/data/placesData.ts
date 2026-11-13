@@ -1,4 +1,6 @@
 import { CityData, VerifiedVenue } from '../types/itinerary';
+import { buildExtraVenues } from './extraVenues';
+import { applyVenueMeta } from './venueMeta';
 
 export const CITIES: CityData[] = [
   {
@@ -91,7 +93,7 @@ export const CITIES: CityData[] = [
   }
 ];
 
-export const PLACES_DATABASE: VerifiedVenue[] = [
+const BASE_PLACES: VerifiedVenue[] = [
   // =================== JAIPUR (FLAGSHIP) ===================
   {
     placeId: "pl_jaipur_hawa_mahal",
@@ -946,3 +948,9 @@ export const PLACES_DATABASE: VerifiedVenue[] = [
     appleMapsUrl: "https://maps.apple.com/?q=Tascantiga+Lisbon"
   }
 ];
+
+
+const heroByCity: Record<string, string> = Object.fromEntries(CITIES.map(c => [c.id, c.heroImage]));
+
+/** Full curated catalogue (base + extras), normalised. Source is always 'curated'. */
+export const PLACES_DATABASE: VerifiedVenue[] = [...BASE_PLACES, ...buildExtraVenues(heroByCity)].map(applyVenueMeta);

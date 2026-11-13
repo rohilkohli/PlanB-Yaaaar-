@@ -13,6 +13,8 @@
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   }
 
+  html, body { overflow-x: clip; }
+
   body {
     overscroll-behavior-y: none;
     -webkit-font-smoothing: antialiased;
@@ -104,3 +106,22 @@ button, a {
   -webkit-tap-highlight-color: transparent;
 }
 
+
+/* Respect reduced-motion preferences (PRD §26) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Visible keyboard focus everywhere */
+:focus-visible:not([tabindex="-1"]) {
+  outline: 3px solid #191D17;
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+.sr-only-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

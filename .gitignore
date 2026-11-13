@@ -32,3 +32,5 @@ stitch_driftless_solo_travel_app/
 stitch_driftless_solo_travel_companion/
 *.pdf
 
+
+e2e/screenshots/

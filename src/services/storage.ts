@@ -1,157 +1,159 @@
 /**
- * Driftless Local-First Persistence & Undo Management
- * Enforces PRD Section 27 (14-day auto-purge & complete local data wipe)
+ * Local-first persistence (PRD FR-007, §27).
+ *  - Active plan + preferences in IndexedDB (idb-keyval), mirrored to localStorage
+ *  - 14-day auto-purge, 1-tap "delete all"
+ *  - Private-browsing detection → keep in memory + offer copy-to-clipboard
+ *  - 30-second Undo state
+ *  - Closed-venue flags live in sessionStorage ("excludes Place ID from session")
  */
-
-import { DayPlan, TravelerPreferences, UndoState } from '../types/itinerary';
+import { del, get, set } from 'idb-keyval';
+import type { DayPlan, TravelerPreferences, UndoState } from '../types/itinerary';
 
 const KEYS = {
-  ACTIVE_PLAN: 'driftless_active_plan_v2',
-  PREFERENCES: 'driftless_preferences_v2',
-  SIMULATE_OFFLINE: 'driftless_simulate_offline_v2',
-  ONBOARDING_DONE: 'driftless_onboarding_done_v2'
-};
+  ACTIVE_PLAN: 'planb_active_plan_v3',
+  PREFERENCES: 'planb_preferences_v3',
+  SIMULATE_OFFLINE: 'planb_simulate_offline_v3',
+  FIRST_PLAN: 'planb_first_plan_date_v3',
+  LAST_PLAN: 'planb_last_plan_date_v3',
+  CLOSED: 'planb_closed_ids_v3'
+} as const;
 
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
+const UNDO_MS = 30_000;
+
+const DEFAULT_PREFS: TravelerPreferences = {
+  mobility: 'stairs_okay',
+  maxStrideMinutes: 25,
+  dietary: [],
+  units: 'km',
+  afterDarkMode: 'well_lit'
+};
+
+interface Saved<T> { data: T; savedAt: number }
+
+function lsGet(k: string): string | null { try { return localStorage.getItem(k); } catch { return null; } }
+function lsSet(k: string, v: string): boolean { try { localStorage.setItem(k, v); return true; } catch { return false; } }
+function lsDel(k: string) { try { localStorage.removeItem(k); } catch { /* ignore */ } }
 
 class StorageService {
-  private undoTimer: NodeJS.Timeout | null = null;
-  private undoStateListeners: Set<(state: UndoState) => void> = new Set();
+  private plan: DayPlan | null = null;
+  private prefs: TravelerPreferences = { ...DEFAULT_PREFS };
+  private ready = false;
+  private blocked = false;
+  private undoTimer: ReturnType<typeof setTimeout> | null = null;
   private undoState: UndoState = { active: false, message: '', expiresAt: null };
+  private listeners = new Set<(s: UndoState) => void>();
 
-  constructor() {
-    this.checkAndPurgeExpired();
-  }
-
-  private checkAndPurgeExpired(): void {
-    try {
-      const raw = localStorage.getItem(KEYS.ACTIVE_PLAN);
-      if (raw) {
-        const item = JSON.parse(raw);
-        if (item.savedAt && Date.now() - item.savedAt > FOURTEEN_DAYS_MS) {
-          localStorage.removeItem(KEYS.ACTIVE_PLAN);
-        }
-      }
-    } catch {
-      // Ignore in private mode fallback
+  /** Load persisted state. Must be awaited before first render. */
+  async init(): Promise<void> {
+    if (this.ready) return;
+    let idbOk = true;
+    let savedPlan: Saved<DayPlan> | undefined;
+    try { savedPlan = await get<Saved<DayPlan>>(KEYS.ACTIVE_PLAN); } catch { idbOk = false; }
+    if (!savedPlan) {
+      const raw = lsGet(KEYS.ACTIVE_PLAN);
+      if (raw) { try { savedPlan = JSON.parse(raw); } catch { /* ignore */ } }
     }
-  }
+    // Storage is "blocked" when neither backend accepts writes (e.g. some private-browsing modes).
+    const lsOk = lsSet('planb_probe', '1');
+    lsDel('planb_probe');
+    this.blocked = !idbOk && !lsOk;
 
-  getActivePlan(): DayPlan | null {
-    try {
-      const raw = localStorage.getItem(KEYS.ACTIVE_PLAN);
-      if (!raw) return null;
-      return JSON.parse(raw).data || null;
-    } catch {
-      return null;
+    if (savedPlan?.data && savedPlan.savedAt && Date.now() - savedPlan.savedAt <= FOURTEEN_DAYS_MS) {
+      this.plan = savedPlan.data;
+    } else if (savedPlan) {
+      await this.removePlan(); // 14-day purge
     }
+    const rawPrefs = lsGet(KEYS.PREFERENCES);
+    if (rawPrefs) { try { this.prefs = { ...DEFAULT_PREFS, ...JSON.parse(rawPrefs) }; } catch { /* ignore */ } }
+    this.ready = true;
   }
 
-  setActivePlan(plan: DayPlan, triggerUndo: boolean = false, undoMessage: string = ""): void {
-    try {
-      localStorage.setItem(KEYS.ACTIVE_PLAN, JSON.stringify({
-        data: plan,
-        savedAt: Date.now()
-      }));
+  /* ---- plan */
+  getActivePlan(): DayPlan | null { return this.plan; }
 
-      if (triggerUndo && plan.previousSnapshot) {
-        this.triggerUndoToast(undoMessage || "Day adapted · Tap Undo to restore");
-      }
-    } catch (e) {
-      console.warn("Storage quota exceeded or private mode, plan held in memory:", e);
-    }
+  async setActivePlan(plan: DayPlan, undoMessage?: string): Promise<void> {
+    this.plan = plan;
+    const payload: Saved<DayPlan> = { data: plan, savedAt: Date.now() };
+    let ok = false;
+    try { await set(KEYS.ACTIVE_PLAN, payload); ok = true; } catch { /* fall back below */ }
+    if (lsSet(KEYS.ACTIVE_PLAN, JSON.stringify(payload))) ok = true;
+    this.blocked = !ok;
+    if (undoMessage && plan.previousSnapshot) this.triggerUndoToast(undoMessage);
   }
 
-  getPreferences(): TravelerPreferences {
-    const defaults: TravelerPreferences = {
-      mobility: 'stairs_okay',
-      maxStrideMinutes: 25,
-      dietary: ['counter_preferred', 'no_reservations'],
-      units: 'km',
-      afterDarkMode: 'well_lit'
-    };
-
-    try {
-      const raw = localStorage.getItem(KEYS.PREFERENCES);
-      if (!raw) return defaults;
-      return { ...defaults, ...JSON.parse(raw) };
-    } catch {
-      return defaults;
-    }
+  private async removePlan() {
+    this.plan = null;
+    lsDel(KEYS.ACTIVE_PLAN);
+    try { await del(KEYS.ACTIVE_PLAN); } catch { /* ignore */ }
   }
 
+  isStorageBlocked(): boolean { return this.blocked; }
+
+  /* ---- preferences */
+  getPreferences(): TravelerPreferences { return this.prefs; }
   setPreferences(prefs: TravelerPreferences): void {
-    try {
-      localStorage.setItem(KEYS.PREFERENCES, JSON.stringify(prefs));
-    } catch (e) {
-      console.warn("Failed to persist preferences:", e);
-    }
+    this.prefs = prefs;
+    lsSet(KEYS.PREFERENCES, JSON.stringify(prefs));
   }
 
-  isOnboardingDone(): boolean {
-    return localStorage.getItem(KEYS.ONBOARDING_DONE) === 'true';
-  }
-
-  setOnboardingDone(val: boolean = true): void {
-    localStorage.setItem(KEYS.ONBOARDING_DONE, val ? 'true' : 'false');
-  }
-
-  isSimulatedOffline(): boolean {
-    return localStorage.getItem(KEYS.SIMULATE_OFFLINE) === 'true';
-  }
-
-  setSimulatedOffline(val: boolean): void {
-    localStorage.setItem(KEYS.SIMULATE_OFFLINE, val ? 'true' : 'false');
-  }
-
+  /* ---- offline simulation (QA aid, also useful on the preferences screen) */
+  isSimulatedOffline(): boolean { return lsGet(KEYS.SIMULATE_OFFLINE) === 'true'; }
+  setSimulatedOffline(v: boolean): void { lsSet(KEYS.SIMULATE_OFFLINE, v ? 'true' : 'false'); }
   isOffline(): boolean {
-    if (this.isSimulatedOffline()) return true;
-    return typeof navigator !== 'undefined' && !navigator.onLine;
+    return this.isSimulatedOffline() || (typeof navigator !== 'undefined' && navigator.onLine === false);
   }
 
+  /* ---- closed-venue flags (session scope) */
+  getClosedIds(): string[] {
+    try { return JSON.parse(sessionStorage.getItem(KEYS.CLOSED) || '[]'); } catch { return []; }
+  }
+  addClosedId(id: string): void {
+    try {
+      const ids = new Set(this.getClosedIds()); ids.add(id);
+      sessionStorage.setItem(KEYS.CLOSED, JSON.stringify([...ids]));
+    } catch { /* ignore */ }
+  }
+
+  /* ---- retention metrics (days since first plan; never leaves the device except as a number) */
+  recordPlanDate(dateISO: string): { firstPlanDate: string; returnedNextDay: boolean; daysSinceFirst: number } {
+    const first = lsGet(KEYS.FIRST_PLAN) || dateISO;
+    const last = lsGet(KEYS.LAST_PLAN);
+    lsSet(KEYS.FIRST_PLAN, first);
+    lsSet(KEYS.LAST_PLAN, dateISO);
+    const day = (d: string) => Math.floor(Date.parse(`${d}T00:00:00Z`) / 86400000);
+    const returnedNextDay = !!last && day(dateISO) - day(last) === 1;
+    return { firstPlanDate: first, returnedNextDay, daysSinceFirst: day(dateISO) - day(first) };
+  }
+
+  /* ---- undo */
   triggerUndoToast(message: string): void {
     if (this.undoTimer) clearTimeout(this.undoTimer);
-
-    this.undoState = {
-      active: true,
-      message,
-      expiresAt: Date.now() + 30000 // 30 seconds
-    };
-    this.notifyUndoListeners();
-
-    this.undoTimer = setTimeout(() => {
-      this.undoState = { active: false, message: '', expiresAt: null };
-      this.notifyUndoListeners();
-    }, 30000);
+    this.undoState = { active: true, message, expiresAt: Date.now() + UNDO_MS };
+    this.notify();
+    this.undoTimer = setTimeout(() => this.dismissUndo(), UNDO_MS);
   }
-
   dismissUndo(): void {
     if (this.undoTimer) clearTimeout(this.undoTimer);
     this.undoState = { active: false, message: '', expiresAt: null };
-    this.notifyUndoListeners();
+    this.notify();
   }
-
-  getUndoState(): UndoState {
-    return this.undoState;
+  getUndoState(): UndoState { return this.undoState; }
+  subscribeUndo(fn: (s: UndoState) => void): () => void {
+    this.listeners.add(fn);
+    fn(this.undoState);
+    return () => { this.listeners.delete(fn); };
   }
+  private notify() { this.listeners.forEach(l => l(this.undoState)); }
 
-  subscribeUndo(listener: (state: UndoState) => void): () => void {
-    this.undoStateListeners.add(listener);
-    listener(this.undoState);
-    return () => this.undoStateListeners.delete(listener);
-  }
-
-  private notifyUndoListeners(): void {
-    this.undoStateListeners.forEach(listener => listener(this.undoState));
-  }
-
-  clearAllData(): void {
-    localStorage.removeItem(KEYS.ACTIVE_PLAN);
-    localStorage.removeItem(KEYS.PREFERENCES);
-    localStorage.removeItem(KEYS.SIMULATE_OFFLINE);
-    localStorage.removeItem(KEYS.ONBOARDING_DONE);
+  /* ---- delete everything */
+  async clearAllData(): Promise<void> {
+    await this.removePlan();
+    Object.values(KEYS).forEach(lsDel);
+    try { sessionStorage.removeItem(KEYS.CLOSED); } catch { /* ignore */ }
+    this.prefs = { ...DEFAULT_PREFS };
+    this.dismissUndo();
   }
 }
 
 export const storage = new StorageService();
-

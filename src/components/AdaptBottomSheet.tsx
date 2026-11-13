@@ -1,138 +1,122 @@
 import React, { useState } from 'react';
-import { 
-  X, 
-  Check, 
-  Edit3, 
-  Lock 
-} from 'lucide-react';
-import { DayPlan } from '../types/itinerary';
+import { CloudRain, Battery, Clock, Utensils, Users, Moon, Lock, Edit3, Loader2, CloudOff } from 'lucide-react';
+import type { DayPlan } from '../types/itinerary';
+import { BottomSheet, PrimaryButton } from './ui';
+import { OFFLINE_MESSAGE } from './OfflineBadge';
 
-interface AdaptBottomSheetProps {
+export interface AdaptSubmit {
+  scenarios: string[];
+  note: string;
+  socialShift?: 'quieter' | 'livelier';
+  useLocation: boolean;
+}
+
+interface Props {
   currentPlan: DayPlan;
-  onAdapt: (selectedScenarios: string[], note: string) => void;
+  isOffline: boolean;
+  busy: boolean;
+  error?: string | null;
+  rainLikely?: boolean;
+  onAdapt: (r: AdaptSubmit) => void;
   onClose: () => void;
 }
 
-export const AdaptBottomSheet: React.FC<AdaptBottomSheetProps> = ({
-  currentPlan,
-  onAdapt,
-  onClose
-}) => {
-  const [selectedScenarios, setSelectedScenarios] = useState<string[]>([]);
+const SCENARIOS = [
+  { id: 'running_late', label: 'Running late', icon: Clock },
+  { id: 'low_battery', label: 'Low battery', icon: Battery },
+  { id: 'weather_turned', label: 'Weather turned', icon: CloudRain },
+  { id: 'hungry_now', label: 'Hungry now', icon: Utensils },
+  { id: 'shift_social', label: 'Shift social', icon: Users },
+  { id: 'early_night', label: 'Early night', icon: Moon }
+] as const;
+
+export const AdaptBottomSheet: React.FC<Props> = ({ currentPlan, isOffline, busy, error, rainLikely, onAdapt, onClose }) => {
+  const [selected, setSelected] = useState<string[]>([]);
   const [note, setNote] = useState('');
+  const [socialShift, setSocialShift] = useState<'quieter' | 'livelier'>('quieter');
+  const [useLocation, setUseLocation] = useState(false);
 
-  const completedBlocks = currentPlan.blocks.filter(b => b.status === 'completed');
-
-  const scenarios = [
-    { id: 'weather_turned', label: 'Rain / Cold', emoji: '🌧️' },
-    { id: 'low_battery', label: 'Low battery', emoji: '🔋' },
-    { id: 'running_late', label: 'Running late', emoji: '⏱️' },
-    { id: 'hungry_now', label: 'Hungry now', emoji: '🥪' },
-    { id: 'want_light_company', label: 'Livelier spot', emoji: '👥' },
-    { id: 'early_night', label: 'Wrap up early', emoji: '🌙' }
-  ];
-
-  const toggleScenario = (id: string) => {
-    setSelectedScenarios(prev =>
-      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
-    );
-  };
-
-  const handleApply = () => {
-    if (selectedScenarios.length === 0 && !note.trim()) {
-      onClose();
-      return;
-    }
-    onAdapt(selectedScenarios, note);
-  };
+  const done = currentPlan.blocks.filter(b => b.status === 'completed').length;
+  const toggle = (id: string) => setSelected(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
+  const canSubmit = !isOffline && !busy && (selected.length > 0 || note.trim().length > 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-obsidian-deep/40 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md bg-white/85 backdrop-blur-2xl rounded-t-4xl shadow-[0_-16px_40px_rgba(0,0,0,0.08)] px-5 pt-3.5 pb-8 flex flex-col max-h-[92vh] overflow-y-auto animate-slide-up border-t border-white/80">
-        {/* Drag Pill Handle */}
-        <div className="w-full flex justify-center pb-3">
-          <div className="w-12 h-1.5 bg-card-border rounded-full" />
+    <BottomSheet title="What changed?" subtitle="Reshape the rest of today. Finished stops stay as they are." onClose={onClose}>
+      {isOffline && (
+        <div role="alert" className="mb-3 p-3 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 text-xs flex gap-2">
+          <CloudOff className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+          <p>{OFFLINE_MESSAGE.replace('Offline mode — your plan and addresses are saved. Reconnect to adapt.', 'You’re offline — reconnect to recalculate new stops. Your current plan is saved below.')}</p>
         </div>
+      )}
 
-        {/* Clean Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="font-bold text-lg text-obsidian tracking-tight">
-              What changed?
-            </h2>
-            <p className="text-xs text-olive-slate">
-              Adjust upcoming stops for the rest of today.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/70 backdrop-blur-md border border-white/80 flex items-center justify-center text-obsidian hover:bg-white/90 transition-colors shadow-2xs"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Scenario Chips */}
-        <div className="grid grid-cols-2 gap-2 mb-4" role="group" aria-label="Select scenarios">
-          {scenarios.map(s => {
-            const isSelected = selectedScenarios.includes(s.id);
-            return (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => toggleScenario(s.id)}
-                className={`flex items-center justify-between min-h-[46px] px-3.5 py-2 rounded-2xl transition-all text-left active:scale-[0.98] ${
-                  isSelected
-                    ? 'bg-obsidian/90 backdrop-blur-md text-white shadow-sm'
-                    : 'bg-white/70 backdrop-blur-md text-obsidian border border-white/80 hover:bg-white/90 shadow-2xs'
-                }`}
-              >
-                <span className="flex items-center gap-2 min-w-0 pr-1">
-                  <span>{s.emoji}</span>
-                  <span className="text-xs font-semibold truncate">{s.label}</span>
-                </span>
-                <span className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 ${isSelected ? 'bg-chartreuse text-obsidian' : 'text-olive-slate/40'}`}>
-                  {isSelected ? <Check className="w-3 h-3" /> : '+'}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Completed Stops Note if any */}
-        {completedBlocks.length > 0 && (
-          <div className="w-full bg-white/60 backdrop-blur-md rounded-2xl px-3.5 py-2.5 mb-3.5 flex items-center gap-2 border border-white/80 text-xs text-olive-slate shadow-2xs">
-            <Lock className="w-3.5 h-3.5 text-spruce shrink-0" />
-            <span>{completedBlocks.length} completed stop{completedBlocks.length > 1 ? 's' : ''} will stay unchanged.</span>
-          </div>
-        )}
-
-        {/* Note Input */}
-        <div className="w-full mb-4">
-          <label htmlFor="adapt-note" className="sr-only">Add a note</label>
-          <div className="relative flex items-center">
-            <Edit3 className="w-3.5 h-3.5 text-olive-slate/60 absolute left-3.5" />
-            <input
-              id="adapt-note"
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Add a note (e.g. coffee craving)..."
-              className="w-full pl-9 pr-3.5 py-2.5 rounded-2xl bg-white/70 backdrop-blur-md border border-white/80 text-xs text-obsidian placeholder-olive-slate/50 focus:outline-none focus:ring-2 focus:ring-chartreuse shadow-2xs"
-            />
-          </div>
-        </div>
-
-        {/* Action Button */}
-        <button
-          type="button"
-          onClick={handleApply}
-          className="w-full h-12 rounded-2xl bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold flex items-center justify-center gap-1.5 active:scale-98 transition-all shadow-glass-cta hover:shadow-[0_8px_24px_rgba(184,238,48,0.4)]"
-        >
-          <span>Update Plan</span>
+      {rainLikely && !selected.includes('weather_turned') && !isOffline && (
+        <button type="button" onClick={() => toggle('weather_turned')} className="mb-3 w-full min-h-[44px] px-3 py-2 rounded-2xl bg-sky-50 border border-sky-200 text-sky-950 text-xs font-semibold text-left flex items-center gap-2">
+          <CloudRain className="w-4 h-4 shrink-0" aria-hidden="true" />
+          <span>Rain looks likely soon. Tap to choose “Weather turned”.</span>
         </button>
+      )}
+
+      <div className="grid grid-cols-2 gap-2 mb-3" role="group" aria-label="What changed">
+        {SCENARIOS.map(s => {
+          const on = selected.includes(s.id);
+          const Icon = s.icon;
+          return (
+            <button
+              key={s.id}
+              type="button"
+              aria-pressed={on}
+              disabled={isOffline}
+              onClick={() => toggle(s.id)}
+              className={`min-h-[52px] px-3 py-2 rounded-2xl transition-all text-left active:scale-[0.98] flex items-center gap-2 disabled:opacity-50 ${
+                on ? 'bg-obsidian text-white shadow-sm' : 'bg-white/80 text-obsidian border border-white/80 hover:bg-white shadow-2xs'
+              }`}
+            >
+              <Icon className={`w-4 h-4 shrink-0 ${on ? 'text-chartreuse' : 'text-spruce'}`} aria-hidden="true" />
+              <span className="text-xs font-semibold">{s.label}</span>
+            </button>
+          );
+        })}
       </div>
-    </div>
+
+      {selected.includes('shift_social') && (
+        <div role="radiogroup" aria-label="Shift social direction" className="grid grid-cols-2 gap-2 mb-3">
+          {(['quieter', 'livelier'] as const).map(v => (
+            <button key={v} type="button" role="radio" aria-checked={socialShift === v} onClick={() => setSocialShift(v)}
+              className={`min-h-[44px] rounded-2xl text-xs font-bold border ${socialShift === v ? 'bg-white border-chartreuse ring-2 ring-chartreuse/40' : 'bg-white/60 border-white/80'}`}>
+              {v === 'quieter' ? 'Something quieter' : 'Something livelier'}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {done > 0 && (
+        <div className="mb-3 px-3.5 py-2.5 rounded-2xl bg-white/70 border border-white/80 flex items-center gap-2 text-xs text-olive-slate">
+          <Lock className="w-3.5 h-3.5 text-spruce shrink-0" aria-hidden="true" />
+          <span>{done} finished stop{done > 1 ? 's' : ''} will stay unchanged.</span>
+        </div>
+      )}
+
+      <label htmlFor="adapt-note" className="sr-only">Optional note</label>
+      <div className="relative mb-3">
+        <Edit3 className="w-3.5 h-3.5 text-olive-slate absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
+        <input
+          id="adapt-note" type="text" maxLength={140} value={note} disabled={isOffline}
+          onChange={e => setNote(e.target.value)}
+          placeholder="Optional note (e.g. a coffee craving)"
+          className="w-full min-h-[48px] pl-9 pr-3.5 rounded-2xl bg-white/80 border border-white/80 text-sm text-obsidian placeholder-olive-slate/70 focus:outline-none focus:ring-2 focus:ring-chartreuse shadow-2xs"
+        />
+      </div>
+
+      <label className="mb-4 min-h-[44px] flex items-center gap-2.5 text-xs text-olive-slate">
+        <input type="checkbox" checked={useLocation} disabled={isOffline} onChange={e => setUseLocation(e.target.checked)} className="w-5 h-5 accent-[#4C6700]" />
+        <span>Use my current location for this update (once, not stored)</span>
+      </label>
+
+      {error && <p role="alert" className="mb-3 text-xs font-semibold text-red-700">{error}</p>}
+
+      <PrimaryButton disabled={!canSubmit} onClick={() => onAdapt({ scenarios: selected, note: note.trim(), socialShift, useLocation })} className="w-full">
+        {busy ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /><span>Reshaping…</span></> : <span>Reshape rest of day</span>}
+      </PrimaryButton>
+    </BottomSheet>
   );
 };

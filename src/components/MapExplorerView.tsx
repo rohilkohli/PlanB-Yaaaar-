@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Bed, BriefcaseBusiness, CloudRain, Coffee, ExternalLink, Globe, MapPin, Navigation, Phone, Star, Sun, Trophy, Utensils } from 'lucide-react';
 import type { Coordinates } from '../types/itinerary';
 import { fetchDetails, fetchDiscover, fetchWeatherNow, type DiscoverCategory, type DiscoverPlace, type PlaceDetails, type WeatherNow } from '../services/discoverService';
 import { storage } from '../services/storage';
 import { BottomSheet } from './ui';
+import { fetchMapsKey, loadGoogleMaps } from '../services/mapsLoader';
 import { DataSourcesLink } from '../pages/LegalPages';
 
 const CATS: Array<{ id: DiscoverCategory; label: string; icon: React.ComponentType<{ className?: string }> }> = [
@@ -26,6 +27,36 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
   const [details, setDetails] = useState<PlaceDetails | null>(null);
   const [weather, setWeather] = useState<WeatherNow | null>(null);
   const offline = storage.isOffline();
+  const mapDiv = useRef<HTMLDivElement>(null);
+  const gMap = useRef<any>(null);
+  const gMarkers = useRef<any[]>([]);
+  const [mapState, setMapState] = useState<'loading' | 'live' | 'drawing'>('loading');
+
+  // Real map when the key is available; the drawn map stays as a fallback if it can't load.
+  useEffect(() => {
+    let alive = true;
+    fetchMapsKey().then(k => k ? loadGoogleMaps(k) : Promise.reject(new Error('no_key')))
+      .then(() => alive && setMapState('live'))
+      .catch(() => alive && setMapState('drawing'));
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    if (mapState !== 'live' || !mapDiv.current || !window.google?.maps) return;
+    const g = window.google.maps;
+    if (!gMap.current) {
+      gMap.current = new g.Map(mapDiv.current, { center: { lat: center.lat, lng: center.lng }, zoom: 14, disableDefaultUI: true, zoomControl: true, gestureHandling: 'greedy' });
+      new g.Marker({ position: center, map: gMap.current, title: 'You are here', icon: { path: g.SymbolPath.CIRCLE, scale: 8, fillColor: '#1a73e8', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 } });
+    }
+    gMarkers.current.forEach(m => m.setMap(null));
+    gMarkers.current = (places ?? []).map((p, i) => {
+      const m = new g.Marker({ position: { lat: p.coords.lat, lng: p.coords.lng }, map: gMap.current, title: `${i + 1}. ${p.name}`, label: { text: String(i + 1), color: '#fff', fontWeight: '700' } });
+      m.addListener('click', () => openDetails(p));
+      return m;
+    });
+    gMap.current.setCenter({ lat: center.lat, lng: center.lng });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapState, places, center]);
 
   useEffect(() => { let a = true; fetchWeatherNow(center).then(w => a && setWeather(w)); return () => { a = false; }; }, [center]);
 
@@ -60,12 +91,12 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
 
   return (
     <main className="flex-1 flex flex-col relative min-h-screen overflow-hidden bg-[#F4F5F7]">
-      {/* Stylised street map */}
-      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      {mapState === 'live' && <div ref={mapDiv} className="absolute inset-0 w-full h-full" role="region" aria-label="Map of nearby places" />}
+      {mapState !== 'live' && <svg className="absolute inset-0 w-full h-full" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <rect width="390" height="844" fill="#F4F5F7" />
         <g stroke="#E3E6EB" strokeWidth="12" strokeLinecap="round" fill="none"><path d="M-20 180 L140 260 L240 210 L410 280" /><path d="M70 70 L90 350 L110 500 L60 860" /><path d="M320 80 L300 320 L340 550 L310 860" /><path d="M-10 620 L150 580 L290 640 L410 590" /></g>
         <g stroke="#FFFFFF" strokeWidth="8" strokeLinecap="round" fill="none"><path d="M-40 290 Q120 280 200 380 T420 460" /><path d="M60 40 L210 260 L380 430" /><path d="M-30 450 L120 430 L220 470 L420 440" /><path d="M120 200 L180 520 L140 780" /><path d="M220 120 L270 410 L230 730" /></g>
-      </svg>
+      </svg>}
       <p className="sr-only">Map overview of {places?.length ?? 0} places near {cityName}. The list below has the same places.</p>
 
       <header className="relative z-20 pt-3 px-5 pb-2 flex items-center justify-between gap-2">
@@ -96,7 +127,7 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
       </div>
 
       {/* Pins */}
-      <div className="absolute inset-0 z-10 pointer-events-none">
+      {mapState !== 'live' && <div className="absolute inset-0 z-10 pointer-events-none">
         <span className="absolute w-4 h-4 rounded-full bg-sky-600 border-2 border-white shadow" style={{ left: `${pins.me.x}%`, top: `${pins.me.y}%`, transform: 'translate(-50%,-50%)' }} aria-hidden="true" />
         {pins.items.map(({ p, x, y }, i) => (
           <button key={p.id} type="button" onClick={() => openDetails(p)} aria-label={`${i + 1}, ${p.name}, ${p.rating} stars`}
@@ -106,7 +137,7 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
             </span>
           </button>
         ))}
-      </div>
+      </div>}
 
       {/* Carousel */}
       <section aria-label="Places" className="absolute bottom-0 left-0 right-0 z-20 pb-28 pt-2">

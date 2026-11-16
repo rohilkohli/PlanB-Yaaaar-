@@ -47,7 +47,7 @@ const LIST_MASK = [
 const DETAIL_MASK = [
   'id', 'displayName', 'formattedAddress', 'rating', 'userRatingCount', 'nationalPhoneNumber', 'websiteUri', 'googleMapsUri',
   'regularOpeningHours.weekdayDescriptions', 'currentOpeningHours.openNow', 'reviews.rating', 'reviews.relativePublishTimeDescription',
-  'reviews.text.text', 'reviews.authorAttribution.displayName'
+  'reviews.text.text', 'reviews.authorAttribution.displayName', 'photos.name'
 ].join(',');
 
 /** "Best of best": rating weighted by how many people agree (log of review count). */
@@ -141,6 +141,7 @@ export async function discover(opts: { center: Coordinates; category: DiscoverCa
 export interface PlaceDetails {
   id: string; name: string; address: string; rating: number; reviewCount: number; phone?: string; website?: string; mapsUrl?: string;
   hours: string[]; openNow?: boolean; reviews: Array<{ rating: number; when: string; text: string; author: string }>;
+  photoNames: string[];
 }
 
 export async function placeDetails(id: string): Promise<PlaceDetails | null> {
@@ -158,8 +159,26 @@ export async function placeDetails(id: string): Promise<PlaceDetails | null> {
     id: p.id, name: p.displayName?.text ?? '', address: p.formattedAddress ?? '', rating: p.rating ?? 0, reviewCount: p.userRatingCount ?? 0,
     phone: p.nationalPhoneNumber, website: p.websiteUri, mapsUrl: p.googleMapsUri,
     hours: p.regularOpeningHours?.weekdayDescriptions ?? [], openNow: p.currentOpeningHours?.openNow,
+    photoNames: ((p.photos ?? []) as any[]).map(x => x.name).filter((n: string) => /^places\/[^/]+\/photos\/[^/]+$/.test(n)).slice(0, 3),
     reviews: ((p.reviews ?? []) as any[]).slice(0, 4).map(r => ({
       rating: r.rating, when: r.relativePublishTimeDescription ?? '', text: String(r.text?.text ?? '').slice(0, 280), author: r.authorAttribution?.displayName ?? 'Traveler'
     }))
   };
+}
+
+/** Photo bytes via our server (the key never reaches the browser). Each image is one paid request, so it's budgeted. */
+export async function placePhoto(name: string, widthPx: number): Promise<{ bytes: ArrayBuffer; type: string } | null> {
+  if (!env().placesKey || !/^places\/[^/]+\/photos\/[^/]+$/.test(name)) return null;
+  if (!reserveCalls(1)) return null;
+  const w = Math.min(Math.max(Math.round(widthPx) || 800, 200), 1200);
+  const res = await fetch(`https://places.googleapis.com/v1/${name}/media?maxWidthPx=${w}&skipHttpRedirect=true`, {
+    headers: { 'X-Goog-Api-Key': env().placesKey! },
+    signal: AbortSignal.timeout(4000)
+  });
+  if (!res.ok) return null;
+  const j = (await res.json()) as { photoUri?: string };
+  if (!j.photoUri || !/^https:\/\/[^/]+\.googleusercontent\.com\//.test(j.photoUri)) return null;
+  const img = await fetch(j.photoUri, { signal: AbortSignal.timeout(4000) });
+  if (!img.ok) return null;
+  return { bytes: await img.arrayBuffer(), type: img.headers.get('content-type') || 'image/jpeg' };
 }

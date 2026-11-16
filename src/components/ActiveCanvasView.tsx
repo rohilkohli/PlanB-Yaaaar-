@@ -364,6 +364,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                       <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-white/60 border border-white/70 shadow-xs shrink-0">
                         <VenueImage
                           src={block.venue.imageUrl}
+                          placeId={block.venue.placeId}
                           className={`w-full h-full object-cover ${isDone ? 'grayscale-[60%]' : ''}`}
                         />
                         <span className="absolute bottom-1 right-1 bg-obsidian/85 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-sm shadow-xs">

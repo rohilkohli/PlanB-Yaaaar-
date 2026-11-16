@@ -19,6 +19,7 @@ export async function nodeApi(req: IncomingMessage, res: ServerResponse): Promis
   res.setHeader('Cache-Control', 'no-store');
   for (const [k, v] of Object.entries(out.headers ?? {})) res.setHeader(k, v);
   if (out.body === undefined) { res.end(); return true; }
+  if (Buffer.isBuffer(out.body)) { res.end(out.body); return true; }
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.end(JSON.stringify(out.body));
   return true;

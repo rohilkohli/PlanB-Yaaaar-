@@ -192,15 +192,29 @@ export const GlassButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>
   </button>
 );
 
-/** Venue photo with a graceful placeholder (live Places venues have no photo; hotlinked ones can fail). */
-export const VenueImage: React.FC<{ src?: string; className?: string }> = ({ src, className = '' }) => {
+/** Venue photo: uses the given image, else loads the venue's live Google photo (via our server), else a placeholder. */
+export const VenueImage: React.FC<{ src?: string; placeId?: string; className?: string }> = ({ src, placeId, className = '' }) => {
   const [failed, setFailed] = React.useState(false);
-  if (!src || failed) {
+  const [live, setLive] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    if (src || !placeId?.startsWith('ChIJ') || typeof navigator !== 'undefined' && navigator.onLine === false) return;
+    let alive = true;
+    fetch(`/api/places/details?id=${encodeURIComponent(placeId)}`, { signal: AbortSignal.timeout(6000) })
+      .then(r => (r.ok ? r.json() : null))
+      .then((j: { details?: { photoNames?: string[] } | null } | null) => {
+        const name = j?.details?.photoNames?.[0];
+        if (alive && name) setLive(`/api/places/photo?name=${encodeURIComponent(name)}&w=800`);
+      })
+      .catch(() => undefined);
+    return () => { alive = false; };
+  }, [src, placeId]);
+  const url = src || live;
+  if (!url || failed) {
     return (
       <div aria-hidden="true" className={`flex items-center justify-center bg-gradient-to-br from-recessed to-recessed-dark text-spruce/60 ${className}`}>
         <MapPin className="w-6 h-6" />
       </div>
     );
   }
-  return <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} className={className} />;
+  return <img src={url} alt="" loading="lazy" onError={() => setFailed(true)} className={className} />;
 };

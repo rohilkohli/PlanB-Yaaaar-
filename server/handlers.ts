@@ -6,7 +6,7 @@ import { autocomplete, reverseGeocode } from './places';
 import { CITIES } from '../src/data/placesData';
 import { fetchWeather } from './weather';
 import { recordEvent } from './events';
-import { discover, placeDetails, DISCOVER_CATEGORIES, type DiscoverCategory } from './discover';
+import { discover, placeDetails, placePhoto, DISCOVER_CATEGORIES, type DiscoverCategory } from './discover';
 
 async function limited(req: ApiRequest, bucket: string, limit: number): Promise<ApiResponse | null> {
   const r = await checkLimit(req.ip, bucket, limit);
@@ -23,6 +23,9 @@ export async function handle(req: ApiRequest): Promise<ApiResponse> {
   const e = env();
   try {
     switch (`${req.method} ${req.path}`) {
+      case 'GET /api/config':
+        // Browser-safe values only. The Maps key is restricted to PlanB's domains by Google (HTTP referrers).
+        return json(200, { mapsKey: process.env.GOOGLE_MAPS_BROWSER_KEY || null });
       case 'GET /api/health':
         return json(200, { ok: true, mode: { places: !!e.placesKey, llm: !!e.geminiKey && !e.deterministicOnly, deterministicOnly: e.deterministicOnly } });
 
@@ -75,6 +78,13 @@ export async function handle(req: ApiRequest): Promise<ApiResponse> {
         const lim = await limited(req, 'details', 120); if (lim) return lim;
         const d = await placeDetails(id).catch(() => null);
         return d ? json(200, { details: d }) : json(200, { details: null });
+      }
+      case 'GET /api/places/photo': {
+        const name = req.query.get('name') || '';
+        const lim = await limited(req, 'photo', 300); if (lim) return lim;
+        const img = await placePhoto(name, Number(req.query.get('w')) || 800);
+        if (!img) return json(404, { error: 'no_photo' });
+        return { status: 200, body: Buffer.from(img.bytes), headers: { 'Content-Type': img.type, 'Cache-Control': 'public, max-age=86400' } };
       }
       case 'POST /api/events': {
         const lim = await limited(req, 'events', e.limitEvents); if (lim) return lim;

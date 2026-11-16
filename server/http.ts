@@ -9,7 +9,7 @@ export interface ApiRequest {
 }
 export interface ApiResponse {
   status: number;
-  body?: unknown;
+  body?: unknown | Buffer;
   headers?: Record<string, string>;
 }
 

@@ -3,7 +3,7 @@ import { handle } from '../server/handlers';
 import { resetMemoryLimits } from '../server/ratelimit';
 import { resetBudget } from '../server/budget';
 import { clientIp } from '../server/http';
-import { setLlmClientFactory } from '../server/llm';
+import { setLlmTransport } from '../server/llm';
 import { validateLlmOutput } from '../server/validate';
 import { normalisePlace, periodsForDay } from '../server/places';
 import { normaliseDiscover } from '../server/discover';
@@ -15,19 +15,23 @@ const req = (method: string, path: string, body?: unknown, ip = '1.2.3.4'): ApiR
 const CAL = { cityId: 'jaipur', startTime: '09:30', endTime: '19:30', energy: 'balanced', budget: '₹₹', afterDark: 'well_lit', social: 'ambient', date: '2026-11-13' };
 const NOW = { minutes: 9 * 60, date: '2026-11-13' };
 
-function fakeLlm(impl: (args: any) => Promise<any> | any) {
-  setLlmClientFactory(() => ({ messages: { create: vi.fn(async (args: any) => impl(args)) } }) as any);
+/** Fake Gemini: `impl` receives the request body and returns the model's text (as a string or object). */
+function fakeLlm(impl: (body: any) => any) {
+  setLlmTransport(async (body: any) => {
+    const out = await impl(body);
+    return typeof out === 'object' && out !== null && 'text' in out ? out : { text: typeof out === 'string' ? out : JSON.stringify(out), finishReason: 'STOP' };
+  });
 }
-const llmText = (obj: unknown) => ({ stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify(obj) }] });
+const llmText = (obj: unknown) => ({ text: JSON.stringify(obj), finishReason: 'STOP' });
 
 const saved = { ...process.env };
 beforeEach(() => {
   resetMemoryLimits();
   resetBudget();
-  delete process.env.GOOGLE_PLACES_API_KEY; delete process.env.ANTHROPIC_API_KEY; delete process.env.USE_DETERMINISTIC_PLANNER;
+  delete process.env.GOOGLE_PLACES_API_KEY; delete process.env.GEMINI_API_KEY; delete process.env.USE_DETERMINISTIC_PLANNER;
   process.env.ALLOW_TEST_CLOCK = '1';
 });
-afterEach(() => { setLlmClientFactory(null); process.env = { ...saved }; vi.restoreAllMocks(); });
+afterEach(() => { setLlmTransport(null); process.env = { ...saved }; vi.restoreAllMocks(); });
 
 describe('/api/plan/generate', () => {
   it('rejects empty location with the PRD copy', async () => {
@@ -49,14 +53,14 @@ describe('/api/plan/generate', () => {
   it('uses LLM sequencing + rationale when valid, and still schedules deterministically', async () => {
     const pool = PLACES_DATABASE.filter(v => v.cityId === 'jaipur');
     fakeLlm(args => {
-      const payload = JSON.parse(args.messages[0].content);
+      const payload = JSON.parse(args.contents[0].parts[0].text);
       expect(payload.candidates.length).toBeLessThanOrEqual(20);
-      expect(args.max_tokens).toBe(800);
+      expect(args.generationConfig.maxOutputTokens).toBe(800);
       const ids = payload.candidates.map((c: any) => c.place_id);
       return llmText({ blocks: ids.slice(0, 4).map((id: string) => ({ place_id: id, why_it_fits: 'You could start here. It suits a calm pace. Extra third sentence.', solo_tip: 'Easy alone.' })) });
     });
     process.env.USE_DETERMINISTIC_PLANNER = '';
-    process.env.ANTHROPIC_API_KEY = 'test';
+    process.env.GEMINI_API_KEY = 'test';
     const r = await handle(req('POST', '/api/plan/generate', { calibration: CAL, now: NOW }));
     const { plan, meta } = r.body as any;
     expect(meta.llm).toBe(true);
@@ -72,7 +76,7 @@ describe('/api/plan/generate', () => {
   ])('falls back on %s', async (_n, out, reason) => {
     const pool = PLACES_DATABASE.filter(v => v.cityId === 'jaipur');
     fakeLlm(() => llmText(out ?? { blocks: [{ place_id: pool[0].placeId, why_it_fits: 'a', solo_tip: 'b' }, { place_id: pool[0].placeId, why_it_fits: 'a', solo_tip: 'b' }] }));
-    process.env.ANTHROPIC_API_KEY = 'test';
+    process.env.GEMINI_API_KEY = 'test';
     const r = await handle(req('POST', '/api/plan/generate', { calibration: CAL, now: NOW }));
     expect((r.body as any).meta.usedFallback).toBe(true);
     expect((r.body as any).meta.fallbackReason).toBe(reason);
@@ -80,20 +84,20 @@ describe('/api/plan/generate', () => {
   });
 
   it('falls back on LLM timeout (>5.5s budget) and on invalid JSON', async () => {
-    process.env.ANTHROPIC_API_KEY = 'test';
+    process.env.GEMINI_API_KEY = 'test';
     process.env.LLM_TIMEOUT_MS = '900';
     fakeLlm(args => new Promise((_, rej) => args && setTimeout(() => rej(Object.assign(new Error('t'), { name: 'TimeoutError' })), 10)));
     let r = await handle(req('POST', '/api/plan/generate', { calibration: CAL, now: NOW }));
     expect((r.body as any).meta.fallbackReason).toBe('timeout');
-    fakeLlm(() => ({ stop_reason: 'end_turn', content: [{ type: 'text', text: '{oops' }] }));
+    fakeLlm(() => ({ text: '{oops', finishReason: 'STOP' }));
     r = await handle(req('POST', '/api/plan/generate', { calibration: CAL, now: NOW }));
     expect((r.body as any).meta.fallbackReason).toBe('invalid_json');
   });
 
   it('USE_DETERMINISTIC_PLANNER kill-switch never calls the LLM', async () => {
     const create = vi.fn();
-    setLlmClientFactory(() => ({ messages: { create } }) as any);
-    process.env.ANTHROPIC_API_KEY = 'test';
+    setLlmTransport(create as any);
+    process.env.GEMINI_API_KEY = 'test';
     process.env.USE_DETERMINISTIC_PLANNER = 'true';
     const r = await handle(req('POST', '/api/plan/generate', { calibration: CAL, now: NOW }));
     expect(create).not.toHaveBeenCalled();
@@ -304,8 +308,8 @@ describe('forged plans', () => {
     p.city.timezone = 'Not/A Zone; DROP';
     p.guardrails = { dietary: ['<script>'], mobility: 'flying', maxStrideMinutes: 9999 };
     let prompt = '';
-    fakeLlm(args => { prompt = args.messages[0].content; return llmText({ blocks: [] }); });
-    process.env.ANTHROPIC_API_KEY = 'test';
+    fakeLlm(args => { prompt = args.contents[0].parts[0].text; return llmText({ blocks: [] }); });
+    process.env.GEMINI_API_KEY = 'test';
     const r = await handle(req('POST', '/api/plan/adapt', { plan: p, scenarios: ['hungry_now'], now: { minutes: 12 * 60, date: '2026-11-13' } }));
     expect(r.status).toBe(200);
     expect(prompt).not.toContain('IGNORE PREVIOUS');

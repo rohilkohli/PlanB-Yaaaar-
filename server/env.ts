@@ -1,7 +1,7 @@
 /** Server config. Read lazily so tests can mutate process.env. Keys never reach the client bundle (PRD §25). */
 export interface ServerEnv {
   placesKey: string | null;
-  anthropicKey: string | null;
+  geminiKey: string | null;
   llmModel: string;
   llmTimeoutMs: number;
   deterministicOnly: boolean;
@@ -23,8 +23,8 @@ export function env(): ServerEnv {
   const e = process.env;
   return {
     placesKey: e.GOOGLE_PLACES_API_KEY || null,
-    anthropicKey: e.ANTHROPIC_API_KEY || null,
-    llmModel: e.LLM_MODEL || 'claude-haiku-5-5',
+    geminiKey: e.GEMINI_API_KEY || null,
+    llmModel: e.LLM_MODEL || 'gemini-2.5-flash',
     llmTimeoutMs: num(e.LLM_TIMEOUT_MS, 5500),
     deterministicOnly: /^(1|true|yes)$/i.test(e.USE_DETERMINISTIC_PLANNER || ''),
     limitGenerate: num(e.RATE_LIMIT_GENERATE_PER_DAY, 10),

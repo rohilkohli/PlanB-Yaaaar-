@@ -4,7 +4,6 @@
  * rationale copy. Times, hours and the sunset cutoff are enforced afterwards by the
  * deterministic scheduler, so the model can never produce an unsafe schedule.
  */
-import Anthropic from '@anthropic-ai/sdk';
 import type { CalibrationData, TravelerPreferences, VerifiedVenue } from '../src/types/itinerary';
 import { openWindow } from '../src/core/hours';
 import { walkMinutes } from '../src/core/geo';
@@ -12,25 +11,24 @@ import { minutesToHHMM } from '../src/core/time';
 import { env } from './env';
 import { validateLlmOutput, type ValidationResult } from './validate';
 
+/** Gemini response schema (OpenAPI subset, upper-case types). Enforced by the API; still re-validated below. */
 const SCHEMA = {
-  type: 'object',
+  type: 'OBJECT',
   properties: {
     blocks: {
-      type: 'array',
+      type: 'ARRAY',
       items: {
-        type: 'object',
+        type: 'OBJECT',
         properties: {
-          place_id: { type: 'string' },
-          why_it_fits: { type: 'string' },
-          solo_tip: { type: 'string' }
+          place_id: { type: 'STRING' },
+          why_it_fits: { type: 'STRING' },
+          solo_tip: { type: 'STRING' }
         },
-        required: ['place_id', 'why_it_fits', 'solo_tip'],
-        additionalProperties: false
+        required: ['place_id', 'why_it_fits', 'solo_tip']
       }
     }
   },
-  required: ['blocks'],
-  additionalProperties: false
+  required: ['blocks']
 } as const;
 
 const SYSTEM = `You sequence a calm, realistically paced single-day plan for a solo traveler.
@@ -96,46 +94,67 @@ export type LlmOutcome =
   | { ok: true; result: Extract<ValidationResult, { ok: true }>; latencyMs: number }
   | { ok: false; reason: string; latencyMs: number };
 
-/** Allows tests to inject a fake client. */
-export type LlmClientFactory = () => Pick<Anthropic, 'messages'>;
-let factory: LlmClientFactory | null = null;
-export function setLlmClientFactory(f: LlmClientFactory | null) { factory = f; }
+/**
+ * Transport: one Gemini generateContent call. Tests replace it with `setLlmTransport`.
+ * Returns the raw JSON text, or throws with an `.reason` for the outcome.
+ */
+export type LlmTransport = (body: unknown, model: string, timeoutMs: number) => Promise<{ text?: string; finishReason?: string; blockReason?: string; status?: number }>;
+let transport: LlmTransport | null = null;
+export function setLlmTransport(t: LlmTransport | null) { transport = t; }
+
+const geminiTransport: LlmTransport = async (body, model, timeoutMs) => {
+  const key = env().geminiKey!;
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeoutMs)
+  });
+  if (!res.ok) return { status: res.status };
+  const j = (await res.json()) as { candidates?: Array<{ finishReason?: string; content?: { parts?: Array<{ text?: string }> } }>; promptFeedback?: { blockReason?: string } };
+  return {
+    text: j.candidates?.[0]?.content?.parts?.map(p => p.text ?? '').join('') || undefined,
+    finishReason: j.candidates?.[0]?.finishReason,
+    blockReason: j.promptFeedback?.blockReason
+  };
+};
 
 export async function sequenceWithLlm(r: LlmRequest, timeoutMs: number): Promise<LlmOutcome> {
   const e = env();
   const started = Date.now();
   if (e.deterministicOnly) return { ok: false, reason: 'kill_switch', latencyMs: 0 };
-  if (!factory && !e.anthropicKey) return { ok: false, reason: 'no_llm_key', latencyMs: 0 };
+  if (!transport && !e.geminiKey) return { ok: false, reason: 'no_llm_key', latencyMs: 0 };
   if (timeoutMs < 800) return { ok: false, reason: 'no_time_budget', latencyMs: 0 };
 
+  const body = {
+    systemInstruction: { parts: [{ text: SYSTEM }] },
+    contents: [{ role: 'user', parts: [{ text: buildPrompt(r) }] }],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema: SCHEMA,
+      maxOutputTokens: 800, // PRD §18 output cap
+      temperature: 0.4,
+      thinkingConfig: { thinkingBudget: 0 } // keep latency low; the scheduler does the reasoning that matters
+    }
+  };
+
   try {
-    const client = factory ? factory() : new Anthropic({ apiKey: e.anthropicKey!, maxRetries: 0, timeout: timeoutMs });
-    const msg = await client.messages.create(
-      {
-        model: e.llmModel,
-        max_tokens: 800, // PRD §18 output cap
-        system: SYSTEM,
-        messages: [{ role: 'user', content: buildPrompt(r) }],
-        thinking: { type: 'disabled' },
-        output_config: { effort: 'low', format: { type: 'json_schema', schema: SCHEMA as unknown as Record<string, unknown> } }
-      },
-      { signal: AbortSignal.timeout(timeoutMs) }
-    );
+    const out = await (transport ?? geminiTransport)(body, e.llmModel, timeoutMs);
     const latencyMs = Date.now() - started;
-    if (msg.stop_reason === 'refusal') return { ok: false, reason: 'refusal', latencyMs };
-    if (msg.stop_reason === 'max_tokens') return { ok: false, reason: 'truncated', latencyMs };
-    const text = msg.content.find((b): b is Anthropic.TextBlock => b.type === 'text')?.text;
-    if (!text) return { ok: false, reason: 'empty', latencyMs };
+    if (out.status) return { ok: false, reason: `api_${out.status}`, latencyMs };
+    if (out.blockReason) return { ok: false, reason: 'refusal', latencyMs };
+    if (out.finishReason === 'SAFETY' || out.finishReason === 'RECITATION') return { ok: false, reason: 'refusal', latencyMs };
+    if (out.finishReason === 'MAX_TOKENS') return { ok: false, reason: 'truncated', latencyMs };
+    if (!out.text) return { ok: false, reason: 'empty', latencyMs };
     let parsed: unknown;
-    try { parsed = JSON.parse(text); } catch { return { ok: false, reason: 'invalid_json', latencyMs }; }
+    try { parsed = JSON.parse(out.text); } catch { return { ok: false, reason: 'invalid_json', latencyMs }; }
     const v = validateLlmOutput(parsed, r.pool, 4);
     if (!v.ok) return { ok: false, reason: v.reason, latencyMs };
     return { ok: true, result: v, latencyMs };
   } catch (err) {
     const latencyMs = Date.now() - started;
     const name = (err as Error)?.name;
-    if (name === 'TimeoutError' || name === 'AbortError' || err instanceof Anthropic.APIConnectionTimeoutError) return { ok: false, reason: 'timeout', latencyMs };
-    if (err instanceof Anthropic.APIError) return { ok: false, reason: `api_${err.status ?? 'error'}`, latencyMs };
+    if (name === 'TimeoutError' || name === 'AbortError') return { ok: false, reason: 'timeout', latencyMs };
     return { ok: false, reason: 'error', latencyMs };
   }
 }

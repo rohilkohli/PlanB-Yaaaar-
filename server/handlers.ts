@@ -24,7 +24,7 @@ export async function handle(req: ApiRequest): Promise<ApiResponse> {
   try {
     switch (`${req.method} ${req.path}`) {
       case 'GET /api/health':
-        return json(200, { ok: true, mode: { places: !!e.placesKey, llm: !!e.anthropicKey && !e.deterministicOnly, deterministicOnly: e.deterministicOnly } });
+        return json(200, { ok: true, mode: { places: !!e.placesKey, llm: !!e.geminiKey && !e.deterministicOnly, deterministicOnly: e.deterministicOnly } });
 
       case 'POST /api/plan/generate': {
         const lim = await limited(req, 'generate', e.limitGenerate); if (lim) return lim;

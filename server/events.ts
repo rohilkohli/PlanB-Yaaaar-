@@ -1,7 +1,7 @@
 /** Anonymous analytics intake (PRD §28). Only whitelisted events/properties; no IDs, no precise location. */
 const TAXONOMY: Record<string, string[]> = {
   calibration_started: ['entry_source', 'used_gps'],
-  plan_generated: ['city', 'energy', 'budget', 'after_dark', 'social', 'latency_ms', 'used_fallback'],
+  plan_generated: ['city', 'energy', 'budget', 'after_dark', 'social', 'latency_ms', 'used_fallback', 'ttfp_ms'],
   block_maps_clicked: ['block_sequence', 'category', 'is_adapted'],
   day_adapted: ['triggers', 'completed_count', 'latency_ms'],
   block_swapped: ['block_sequence', 'swap_reason'],
@@ -26,5 +26,5 @@ export function sanitizeEvent(body: any): { name: string; props: Record<string, 
 export function recordEvent(body: unknown) {
   const e = sanitizeEvent(body);
   if (!e) return;
-  if (process.env.NODE_ENV !== 'test') console.log(JSON.stringify({ t: new Date().toISOString(), analytics: e.name, ...e.props }));
+  if (process.env.NODE_ENV !== 'test') console.log(JSON.stringify({ severity: 'INFO', message: e.name, event: 'analytics', name: e.name, ...e.props }));
 }

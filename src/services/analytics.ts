@@ -7,12 +7,19 @@ export type EventName =
   | 'block_swapped' | 'adaptation_undone' | 'venue_issue_flagged' | 'next_day_returned';
 
 let calibrationStartedSent = false;
+let calibrationStartedAt: number | null = null;
+
+/** Milliseconds from the first calibration interaction to now (PRD metric: time-to-first-plan). */
+export function ttfpMs(): number | undefined {
+  return calibrationStartedAt === null ? undefined : Date.now() - calibrationStartedAt;
+}
 
 export function track(name: EventName, props: Record<string, string | number | boolean | string[]> = {}): void {
   if (typeof navigator === 'undefined' || navigator.onLine === false) return;
   if (name === 'calibration_started') {
     if (calibrationStartedSent) return;
     calibrationStartedSent = true;
+    calibrationStartedAt = Date.now();
   }
   try {
     const body = JSON.stringify({ name, props });

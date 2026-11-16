@@ -11,6 +11,7 @@ import { sunsetLocalMinutes } from '../core/sunset';
 import { fetchSuggestions } from '../services/planService';
 import { track } from '../services/analytics';
 import { GlassButton, PrimaryButton, RadioGroup } from './ui';
+import { LegalLinks } from '../pages/LegalPages';
 
 export interface BuildMeta { demo?: boolean; usedGps?: boolean }
 
@@ -376,6 +377,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
           </div>
         </section>
       )}
+      <nav aria-label="Legal" className="mt-4 text-xs"><LegalLinks /></nav>
     </main>
   );
 };

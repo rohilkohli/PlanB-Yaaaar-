@@ -1,0 +1,44 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck (app + server)
+        run: npm run typecheck
+      - name: Unit + integration tests
+        run: npm test
+      - name: Plan-quality eval (offline, gated)
+        run: npm run eval
+      - name: Build
+        run: npm run build
+      - name: Install Chromium for E2E
+        run: npx playwright-core install --with-deps chromium
+      - name: End-to-end (390x844) + axe accessibility audits
+        run: npx tsx e2e/run.ts
+        env:
+          # E2E runs zero-config so it never spends Google/LLM quota
+          GOOGLE_PLACES_API_KEY: ""
+          ANTHROPIC_API_KEY: ""
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-screenshots
+          path: e2e/screenshots
+          if-no-files-found: ignore

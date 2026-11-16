@@ -4,6 +4,7 @@ import type { Coordinates } from '../types/itinerary';
 import { fetchDetails, fetchDiscover, fetchWeatherNow, type DiscoverCategory, type DiscoverPlace, type PlaceDetails, type WeatherNow } from '../services/discoverService';
 import { storage } from '../services/storage';
 import { BottomSheet } from './ui';
+import { DataSourcesLink } from '../pages/LegalPages';
 
 const CATS: Array<{ id: DiscoverCategory; label: string; icon: React.ComponentType<{ className?: string }> }> = [
   { id: 'best', label: 'Best of best', icon: Trophy },
@@ -141,7 +142,7 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
             </ul>
           </>
         )}
-        <p className="mx-5 mt-2 text-[11px] text-olive-slate">{source === 'google_places' ? 'Ratings and reviews via Google Places.' : 'Curated listings. Add a Google Places key for live results.'}</p>
+        <p className="mx-5 mt-2 text-[11px] text-olive-slate">{source === 'google_places' ? <>Place data from Google Maps · <DataSourcesLink /></> : <>Curated listings · <DataSourcesLink /></>}</p>
       </section>
 
       {open && active && (

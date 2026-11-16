@@ -182,6 +182,20 @@ describe('Google Places normalisation', () => {
   });
 });
 
+describe('Places type exclusions (found by the live eval)', () => {
+  const base = { displayName: { text: 'X' }, formattedAddress: 'a', location: { latitude: 1, longitude: 1 }, rating: 4.6, userRatingCount: 900,
+    regularOpeningHours: { periods: [{ open: { day: 0, hour: 0 } }] } };
+  it.each([['casino'], ['train_station'], ['movie_theater'], ['lodging'], ['night_club']])('drops %s', t => {
+    expect(normalisePlace({ ...base, id: 'ChIJxxxxxxxxxx', types: [t, 'tourist_attraction'] } as any, 'goa', 1, '₹', 'x')).toBeNull();
+  });
+  it('drops stations that Google only types as attractions', () => {
+    expect(normalisePlace({ ...base, id: 'ChIJzzzzzzzzzz', displayName: { text: 'Varanasi Junction' }, types: ['tourist_attraction'] } as any, 'varanasi', 1, '₹', 'x')).toBeNull();
+  });
+  it('keeps normal sights', () => {
+    expect(normalisePlace({ ...base, id: 'ChIJyyyyyyyyyy', types: ['tourist_attraction', 'museum'] } as any, 'goa', 1, '₹', 'x')).not.toBeNull();
+  });
+});
+
 describe('analytics intake', () => {
   it('whitelists events and properties; drops anything else', () => {
     expect(sanitizeEvent({ name: 'plan_generated', props: { city: 'jaipur', latency_ms: 1200, email: 'a@b.c', lat: 1.2 } })).toEqual({ name: 'plan_generated', props: { city: 'jaipur', latency_ms: 1200 } });

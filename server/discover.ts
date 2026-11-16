@@ -7,6 +7,7 @@ import { haversineKm } from '../src/core/geo';
 import type { Coordinates } from '../src/types/itinerary';
 import { env } from './env';
 import { cached, reserveCalls } from './budget';
+import { EXCLUDED_TYPES, TRANSIT_NAME } from './places';
 
 export type DiscoverCategory = 'best' | 'cafes' | 'hostels' | 'agencies' | 'food';
 export const DISCOVER_CATEGORIES: DiscoverCategory[] = ['best', 'cafes', 'hostels', 'agencies', 'food'];
@@ -37,7 +38,7 @@ const TYPES: Record<DiscoverCategory, string[]> = {
 
 const LIST_MASK = [
   'places.id', 'places.displayName', 'places.formattedAddress', 'places.location', 'places.rating',
-  'places.userRatingCount', 'places.priceLevel', 'places.currentOpeningHours.openNow'
+  'places.userRatingCount', 'places.priceLevel', 'places.currentOpeningHours.openNow', 'places.types'
 ].join(',');
 
 const DETAIL_MASK = [
@@ -66,6 +67,9 @@ async function post(url: string, mask: string, body: unknown, timeoutMs: number)
 
 export function normaliseDiscover(p: any, category: DiscoverCategory, center: Coordinates): DiscoverPlace | null {
   if (!p?.id || !p.displayName?.text || !p.location) return null;
+  // Hostels are the point of that tab, so lodging types are only excluded elsewhere.
+  if (category !== 'hostels' && (p.types ?? []).some((t: string) => EXCLUDED_TYPES.has(t))) return null;
+  if (TRANSIT_NAME.test(p.displayName.text)) return null;
   const coords = { lat: p.location.latitude, lng: p.location.longitude };
   const rating = Number(p.rating ?? 0);
   const reviewCount = Number(p.userRatingCount ?? 0);

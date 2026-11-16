@@ -197,6 +197,19 @@ async function main() {
     await page.keyboard.press('Escape');
     step('Map Explorer: categories, curated fallback, details sheet');
 
+    // ---- Legal pages: reachable from Preferences, readable, accessible, honest about data flows
+    await page.goto(`${BASE}/preferences`);
+    await page.getByRole('dialog', { name: 'Preferences' }).getByRole('link', { name: 'Privacy' }).click();
+    await page.getByRole('heading', { name: 'Privacy' }).waitFor();
+    await page.getByText('Your location is used only when you tap').waitFor();
+    await axeAudit(page, 'privacy page');
+    await page.goto(`${BASE}/terms`);
+    await page.getByText('Your judgment comes first').waitFor();
+    await page.goto(`${BASE}/data-sources`);
+    await page.getByText('Curated listings').first().waitFor();
+    await axeAudit(page, 'data sources page');
+    step('privacy / terms / data-sources pages render and pass axe');
+
     // ---- Reset data
     await page.goto(`${BASE}/preferences`);
     await page.getByRole('button', { name: /Reset & delete all my data/ }).click();

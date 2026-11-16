@@ -19,6 +19,7 @@ import { DayPlan, PlanBlock } from '../types/itinerary';
 import { haversineKm } from '../core/geo';
 import { nowIn } from '../core/clock';
 import { VenueImage } from './ui';
+import { DataSourcesLink } from '../pages/LegalPages';
 
 interface ActiveCanvasViewProps {
   plan: DayPlan;
@@ -489,8 +490,8 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           <p className="mt-4 mb-1 px-1 text-[11px] leading-relaxed text-olive-slate flex gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-spruce shrink-0 mt-0.5" aria-hidden="true" />
             <span>
-              {plan.dataSource === 'google_places' ? 'Hours via Google Places. ' : 'Hours from a curated listing — confirm in Maps. '}
-              Street conditions change, so your own judgment always comes first.
+              {plan.dataSource === 'google_places' ? 'Place data from Google Maps. ' : 'Hours from a curated listing — confirm in Maps. '}
+              Street conditions change, so your own judgment always comes first. <DataSourcesLink />
             </span>
           </p>
         </section>

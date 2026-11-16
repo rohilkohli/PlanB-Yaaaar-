@@ -90,6 +90,8 @@ export interface VerifiedVenue {
   tags?: string[];
   /** Exact open periods today as [openMin, closeMin] pairs (live Places data; handles lunch/dinner gaps). */
   periods?: Array<[number, number]>;
+  /** Raw Google place types (live data only) — used for filtering and audit. */
+  googleTypes?: string[];
 }
 
 export interface PlanBlock {

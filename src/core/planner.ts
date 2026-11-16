@@ -92,8 +92,13 @@ export interface ScoreOpts {
   maxWalk: number;
 }
 
+/** Headline sights (culture/viewpoint, well rated) — a day should contain at least one. */
+export const isAnchorVenue = (v: Pick<VerifiedVenue, 'category' | 'rating'>) =>
+  (v.category === 'culture' || v.category === 'viewpoint') && v.rating >= 4.4;
+
 export function scoreVenue(v: VerifiedVenue, o: ScoreOpts): number {
   let s = 0;
+  if (isAnchorVenue(v)) s += 2.5;
   const catIdx = SLOT_CATS[o.slot].indexOf(v.category);
   s += catIdx >= 0 ? 6 - catIdx : 0;
   if (v.timeSlot === o.slot) s += 3;
@@ -335,19 +340,27 @@ export function generatePlan(
     }
 
     if (!chosen) {
-      let best = -Infinity;
-      for (const v of pool) {
-        if (used.has(v.placeId)) continue;
-        const pl = place(v, cursor, prev, win.end, calibration.energy, cap);
-        if (!pl) continue;
-        const slot = slotFor((pl.start + pl.end) / 2);
-        let sc = scoreVenue(v, { slot, calib: calibration, from: prev ?? calibration.anchorCoords, maxWalk: cap });
-        sc -= pl.wait / 30;
-        // Avoid two food stops back-to-back and repeating a category.
-        const last = blocks[blocks.length - 1];
-        if (last && last.venue.category === v.category) sc -= 2.5;
-        if (last && isFood(last.venue) && isFood(v) && v.category !== 'cafe') sc -= 3;
-        if (sc > best) { best = sc; chosen = { v, pl }; }
+      // Pass 1 forbids two food stops in a row; pass 2 only runs if pass 1 found nothing at all.
+      for (const strict of [true, false]) {
+        // Relaxing is only worth it to reach the 3-block minimum of a full day; otherwise end the plan early.
+        if (!strict && !(target >= 3 && blocks.length < 3)) break;
+        let best = -Infinity;
+        for (const v of pool) {
+          if (used.has(v.placeId)) continue;
+          const last = blocks[blocks.length - 1];
+          if (strict && last && isFood(last.venue) && isFood(v)) continue;
+          const pl = place(v, cursor, prev, win.end, calibration.energy, cap);
+          if (!pl) continue;
+          const slot = slotFor((pl.start + pl.end) / 2);
+          let sc = scoreVenue(v, { slot, calib: calibration, from: prev ?? calibration.anchorCoords, maxWalk: cap });
+          sc -= pl.wait / 30;
+          // Variety: every earlier stop of the same category costs a little more.
+          sc -= 1.8 * blocks.filter(b => b.venue.category === v.category).length;
+          // Don't spend the whole day without a headline sight.
+          if (!blocks.some(b => isAnchorVenue(b.venue)) && isAnchorVenue(v)) sc += 1.5 * (i + 1);
+          if (sc > best) { best = sc; chosen = { v, pl }; }
+        }
+        if (chosen) break;
       }
     }
     if (!chosen) break;
@@ -451,6 +464,7 @@ export function adaptPlan(plan: DayPlan, opts: AdaptOptions, ctx: PlanContext): 
       if (opts.hints?.[i]?.placeId === v.placeId) s += 8;
       const last = newBlocks[newBlocks.length - 1] ?? lastFrozen;
       if (last && last.venue.category === v.category) s -= 2.5;
+      if (last && isFood(last.venue) && isFood(v) && oneOff !== 'early_night') s -= 6;
       if (s > bestScore) { bestScore = s; best = { v, pl }; }
     }
     if (!best) break;

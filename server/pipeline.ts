@@ -281,14 +281,19 @@ export async function swap(body: any): Promise<{ alternatives: VerifiedVenue[]; 
 
 /* ------------------------------------------------------------------ logging */
 
-/** Structured log line. Coordinates are coarsened to city level (PRD §25). */
+/**
+ * Structured log line (Cloud Logging reads `severity` and `message` from JSON on stdout).
+ * Coordinates are coarsened to city level (PRD §25); IPs are never logged.
+ */
 export function logEvent(name: string, props: Record<string, unknown> = {}) {
   const safe: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(props)) {
     if (v && typeof v === 'object' && 'lat' in (v as object) && 'lng' in (v as object)) safe[k] = truncateCoords(v as Coordinates);
     else safe[k] = v;
   }
-  if (process.env.NODE_ENV !== 'test') console.log(JSON.stringify({ t: new Date().toISOString(), event: name, ...safe }));
+  const isError = name === 'server_error' || name === 'places_error';
+  const severity = isError ? 'ERROR' : 'INFO';
+  if (process.env.NODE_ENV !== 'test') console.log(JSON.stringify({ severity, message: name, event: name, ...safe }));
 }
 
 export { approxTimezone, DEFAULT_PREFS };

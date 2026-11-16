@@ -10,6 +10,21 @@ const FIELD_MASK = [
   'places.regularOpeningHours', 'places.priceLevel', 'places.types', 'places.rating', 'places.userRatingCount'
 ].join(',');
 
+/**
+ * Types that make a bad stop in a solo traveler's day plan: transit hubs, lodging itself, gambling, nightlife,
+ * cinemas, civic/medical/education buildings. Found by the live eval (casinos in Goa, a railway station in Varanasi,
+ * a cinema in Jaipur, hotels as "dining").
+ */
+export const EXCLUDED_TYPES = new Set([
+  'lodging', 'hotel', 'resort_hotel', 'motel', 'hostel', 'guest_house', 'casino', 'movie_theater', 'night_club', 'bar',
+  'liquor_store', 'train_station', 'transit_station', 'subway_station', 'bus_station', 'bus_stop', 'airport', 'gas_station',
+  'parking', 'hospital', 'doctor', 'school', 'university', 'government_office', 'local_government_office', 'courthouse',
+  'police', 'embassy', 'bank', 'atm', 'car_dealer', 'car_repair', 'funeral_home', 'real_estate_agency', 'storage'
+]);
+
+/** Some stations are only typed as tourist attractions; catch the obvious ones by name (not termini that are heritage sights). */
+export const TRANSIT_NAME = /\b(junction|railway|airport|bus\s?stand|bus\s?terminal|metro station)\b/i;
+
 interface GPlace {
   id: string;
   displayName?: { text: string };
@@ -86,6 +101,7 @@ export function periodsForDay(p: GPlace, weekday: number): Array<[number, number
 
 export function normalisePlace(p: GPlace, cityId: string, weekday: number, currency: '₹' | '$', fetchedAt: string): VerifiedVenue | null {
   if (!p.id || !p.displayName?.text || !p.location) return null;
+  if ((p.types ?? []).some(t => EXCLUDED_TYPES.has(t)) || TRANSIT_NAME.test(p.displayName.text)) return null;
   const periods = periodsForDay(p, weekday);
   if (periods === null || (Array.isArray(periods) && periods.length === 0)) return null; // unknown/closed today → not verifiable
   const allDay = periods === 'all_day';
@@ -127,6 +143,7 @@ export function normalisePlace(p: GPlace, cityId: string, weekday: number, curre
     appleMapsUrl: `https://maps.apple.com/?ll=${coords.lat},${coords.lng}&q=${q}`,
     source: 'google_places',
     verifiedAt: fetchedAt,
+    googleTypes: p.types ?? [],
     tags: []
   };
 }

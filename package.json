@@ -10,7 +10,10 @@
     "test": "vitest run",
     "start": "tsx server/index.ts",
     "typecheck": "tsc --noEmit -p tsconfig.server.json",
-    "test:e2e": "npm run build && tsx e2e/run.ts"
+    "test:e2e": "npm run build && tsx e2e/run.ts",
+    "eval": "tsx eval/offline.ts",
+    "eval:live": "tsx eval/live.ts",
+    "ci": "npm run typecheck && npm test && npm run eval && npm run build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",

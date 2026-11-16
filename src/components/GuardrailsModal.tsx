@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Trash2, WifiOff, ShieldCheck } from 'lucide-react';
 import type { TravelerPreferences } from '../types/itinerary';
 import { BottomSheet, GlassButton, PrimaryButton, RadioGroup } from './ui';
+import { LegalLinks } from '../pages/LegalPages';
 
 interface Props {
   preferences: TravelerPreferences;
@@ -132,6 +133,8 @@ export const GuardrailsModal: React.FC<Props> = ({ preferences, isSimulatedOffli
             </div>
           )}
         </div>
+
+        <nav aria-label="Legal" className="text-xs"><LegalLinks /></nav>
 
         <div className="flex items-center gap-2.5 pt-1" aria-live="polite">
           <GlassButton onClick={onClose} className="px-4">Cancel</GlassButton>

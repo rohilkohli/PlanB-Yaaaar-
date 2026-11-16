@@ -4,6 +4,7 @@ import { ActiveCanvasView } from './components/ActiveCanvasView';
 import { ExploreView } from './components/ExploreView';
 import { MapExplorerView } from './components/MapExplorerView';
 import { CITIES } from './data/placesData';
+import { DataSourcesPage, PrivacyPage, TermsPage } from './pages/LegalPages';
 import { NavigationDock } from './components/NavigationDock';
 import { GeneratingTransition } from './components/GeneratingTransition';
 import { AdaptBottomSheet, type AdaptSubmit } from './components/AdaptBottomSheet';
@@ -14,7 +15,7 @@ import { OfflineBadge } from './components/OfflineBadge';
 
 import { storage } from './services/storage';
 import { adaptRemote, buildPlan, fetchRainHint, PlanError } from './services/planService';
-import { track } from './services/analytics';
+import { track, ttfpMs } from './services/analytics';
 import { navigate, useRoute } from './router';
 import { applyBlockSwap, undoMutation } from './core/planner';
 import { nowIn } from './core/clock';
@@ -61,6 +62,7 @@ export const App: React.FC = () => {
   const planIsToday = !!plan && plan.calibration.date === todayIn(plan.city.timezone);
   const params = new URLSearchParams(route.search);
   const wantsNew = params.has('new');
+  const isLegal = ['/privacy', '/terms', '/data-sources'].includes(route.path);
   const base: 'calibrate' | 'today' | 'explore' | 'map' =
     route.path === '/explore' ? 'explore' : route.path === '/map' ? 'map' : route.path === '/today' || route.path === '/preferences' ? (plan ? 'today' : 'calibrate') : 'calibrate';
 
@@ -68,7 +70,7 @@ export const App: React.FC = () => {
     if (!ready) return;
     if (route.path === '/' && plan && planIsToday && !wantsNew) navigate('/today', { replace: true });
     else if (route.path === '/today' && !plan) navigate('/', { replace: true });
-    else if (!['/', '/today', '/preferences', '/explore', '/map'].includes(route.path)) navigate(plan && planIsToday ? '/today' : '/', { replace: true });
+    else if (!['/', '/today', '/preferences', '/explore', '/map', '/privacy', '/terms', '/data-sources'].includes(route.path)) navigate(plan && planIsToday ? '/today' : '/', { replace: true });
   }, [ready, route.path, plan, planIsToday, wantsNew]);
 
   const isPrefsOpen = route.path === '/preferences';
@@ -109,7 +111,8 @@ export const App: React.FC = () => {
       if (rec.returnedNextDay) track('next_day_returned', { days_since_first_plan: rec.daysSinceFirst });
       track('plan_generated', {
         city: p.city.id, energy: p.calibration.energy, budget: p.calibration.budget, after_dark: p.calibration.afterDark,
-        social: p.calibration.social, latency_ms: m.latencyMs || Date.now() - started, used_fallback: m.usedFallback
+        social: p.calibration.social, latency_ms: m.latencyMs || Date.now() - started, used_fallback: m.usedFallback,
+        ...(ttfpMs() !== undefined ? { ttfp_ms: ttfpMs()! } : {})
       });
       navigate('/today', { replace: true });
     } catch (e) {
@@ -236,9 +239,9 @@ export const App: React.FC = () => {
 
         <UndoToast undoState={undoState} onUndo={handleUndo} onDismiss={() => storage.dismissUndo()} />
 
-        {tab !== 'calibrate' && tab !== 'map' && <div className="px-5 pt-2"><OfflineBadge isOffline={isOffline} /></div>}
+        {!isLegal && tab !== 'calibrate' && tab !== 'map' && <div className="px-5 pt-2"><OfflineBadge isOffline={isOffline} /></div>}
 
-        {tab === 'calibrate' && (
+        {!isLegal && tab === 'calibrate' && (
           <CalibrationView
             preferences={preferences}
             onOpenGuardrails={() => navigate('/preferences')}
@@ -249,7 +252,7 @@ export const App: React.FC = () => {
           />
         )}
 
-        {tab === 'today' && plan && (
+        {!isLegal && tab === 'today' && plan && (
           <ActiveCanvasView
             plan={plan}
             isOffline={isOffline}
@@ -269,7 +272,9 @@ export const App: React.FC = () => {
           />
         )}
 
-        {tab === 'map' && (
+        {isLegal && (route.path === '/privacy' ? <PrivacyPage /> : route.path === '/terms' ? <TermsPage /> : <DataSourcesPage />)}
+
+        {!isLegal && tab === 'map' && (
           <MapExplorerView
             center={plan?.calibration.anchorCoords ?? CITIES[0].coords}
             cityName={plan?.city.name ?? CITIES[0].name}
@@ -277,7 +282,7 @@ export const App: React.FC = () => {
           />
         )}
 
-        {tab === 'explore' && (
+        {!isLegal && tab === 'explore' && (
           <ExploreView onLoadCity={handleLoadCurated} onBackToPlan={() => navigate(plan ? '/today' : '/')} />
         )}
 

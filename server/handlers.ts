@@ -29,13 +29,13 @@ export async function handle(req: ApiRequest): Promise<ApiResponse> {
       case 'POST /api/plan/generate': {
         const lim = await limited(req, 'generate', e.limitGenerate); if (lim) return lim;
         const out = await generate(req.body);
-        logEvent('plan_generated_server', { city: out.plan.city.id, latency_ms: out.meta.latencyMs, used_fallback: out.meta.usedFallback, reason: out.meta.fallbackReason });
+        logEvent('plan_generated_server', { city: out.plan.city.id, latency_ms: out.meta.latencyMs, used_fallback: out.meta.usedFallback, reason: out.meta.fallbackReason ?? 'none', source: out.meta.source, blocks: out.plan.blocks.length });
         return json(200, out);
       }
       case 'POST /api/plan/adapt': {
         const lim = await limited(req, 'adapt', e.limitAdapt); if (lim) return lim;
         const out = await adapt(req.body);
-        logEvent('plan_adapted_server', { latency_ms: out.meta.latencyMs, used_fallback: out.meta.usedFallback, reason: out.meta.fallbackReason });
+        logEvent('plan_adapted_server', { latency_ms: out.meta.latencyMs, used_fallback: out.meta.usedFallback, reason: out.meta.fallbackReason ?? 'none', source: out.meta.source });
         return json(200, out);
       }
       case 'POST /api/plan/swap': {

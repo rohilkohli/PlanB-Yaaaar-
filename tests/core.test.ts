@@ -90,7 +90,7 @@ describe('generatePlan (F-02, US-004, US-006)', () => {
   });
 
   it('applies dietary and mobility guardrails', () => {
-    const veg = setup('lisbon', {}, { dietary: ['vegetarian', 'alcohol_free'], mobility: 'step_free' });
+    const veg = setup('jaipur', {}, { dietary: ['vegetarian', 'alcohol_free'], mobility: 'step_free' });
     veg.plan.blocks.forEach(b => {
       expect(b.venue.tags ?? []).not.toContain('non_veg');
       expect(b.venue.tags ?? []).not.toContain('alcohol');

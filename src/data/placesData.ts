@@ -80,17 +80,6 @@ export const CITIES: CityData[] = [
     weatherVibe: "Gentle coastal humidity · 27°C",
     heroImage: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=800&q=80"
   },
-  {
-    id: "lisbon",
-    name: "Lisbon",
-    country: "Portugal",
-    tagline: "Sunlit miradouros & tiled alleys",
-    coords: { lat: 38.7119, lng: -9.1306 },
-    timezone: "Europe/Lisbon",
-    defaultSunset: "17:42",
-    weatherVibe: "Warm coastal breeze · 22°C",
-    heroImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuAiHnxGYBXVa1EN9-tQo3hlpE8WYNtH8TRYvbdbIsj_UepCNPUVasbJxyoE-mroM_M_jT5GnRPDluVcpx9MAGimrhgGX7MgiJ29XARjqvTTpq92VGDNvXbmZtD-ReOIJHHa0jeHPBcOHQZYxIEb04Ixpo55D3hXcb5y88_XqKg1U1G4ArIGEw7cBTaLqId7Emq6AqJDNfiFZyHW7EpnF5zKPdCc97XiHgITH9plufg"
-  }
 ];
 
 const BASE_PLACES: VerifiedVenue[] = [
@@ -953,4 +942,9 @@ const BASE_PLACES: VerifiedVenue[] = [
 const heroByCity: Record<string, string> = Object.fromEntries(CITIES.map(c => [c.id, c.heroImage]));
 
 /** Full curated catalogue (base + extras), normalised. Source is always 'curated'. */
-export const PLACES_DATABASE: VerifiedVenue[] = [...BASE_PLACES, ...buildExtraVenues(heroByCity)].map(applyVenueMeta);
+/** Destinations offered in the app. Lisbon was removed: PlanB is India-only for now. */
+const EXCLUDED_CITIES = new Set(['lisbon']);
+
+export const PLACES_DATABASE: VerifiedVenue[] = [...BASE_PLACES, ...buildExtraVenues(heroByCity)]
+  .filter(v => !EXCLUDED_CITIES.has(v.cityId))
+  .map(applyVenueMeta);

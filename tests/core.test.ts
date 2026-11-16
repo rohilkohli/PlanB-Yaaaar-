@@ -209,3 +209,50 @@ describe('time helpers', () => {
   });
   it('overnight closing is normalised', () => expect(openWindow({ opensAt: '10:00', closesAt: '00:00' }).close).toBe(1440));
 });
+
+import { isClosedOn, holidayOn, VENUE_CLOSURES } from '../src/data/closures';
+import { transitUrl, uberUrl } from '../src/core/transport';
+import { signPlan, verifyPlan } from '../server/sign';
+describe('closures, holidays and transport links', () => {
+  it('flags national holidays as a note, not a hard exclusion', () => {
+    expect(holidayOn('2026-08-15')).toMatch(/holiday/);
+    expect(holidayOn('2026-11-13')).toBeNull();
+  });
+  it('excludes a venue with a verified weekly closure on that weekday', () => {
+    VENUE_CLOSURES['pl_test_closed_monday'] = { weekdays: [1], source: 'test' };
+    expect(isClosedOn('pl_test_closed_monday', '2026-11-16')).toBe(true); // a Monday
+    expect(isClosedOn('pl_test_closed_monday', '2026-11-17')).toBe(false);
+    delete VENUE_CLOSURES['pl_test_closed_monday'];
+  });
+  it('closed venues never appear in a generated plan on that day', () => {
+    const city = CITIES.find(c => c.id === 'jaipur') as CityData;
+    const venues = PLACES_DATABASE.filter(v => v.cityId === 'jaipur');
+    const target = venues[0];
+    VENUE_CLOSURES[target.placeId] = { dates: ['2026-11-13'], source: 'test' };
+    const calib = { ...buildCalibration({ startTime: '09:30', endTime: '19:30' }, city, DATE), energy: 'balanced' as const, social: 'ambient' as const, afterDark: 'well_lit' as const, budget: '₹₹' as const };
+    const p = generatePlan(calib, { mobility: 'stairs_okay', maxStrideMinutes: 25, dietary: [], units: 'km', afterDarkMode: 'well_lit' }, { city, candidates: venues, sunsetMinutes: sunsetFor(city, DATE) });
+    expect(p.blocks.some(b => b.venue.placeId === target.placeId)).toBe(false);
+    delete VENUE_CLOSURES[target.placeId];
+  });
+  it('builds Google Maps transit and Uber links for a venue', () => {
+    const v = PLACES_DATABASE[0];
+    expect(transitUrl(v)).toContain('travelmode=transit');
+    expect(transitUrl(v)).toContain(`${v.coords.lat},${v.coords.lng}`);
+    expect(uberUrl(v)).toContain('dropoff%5Bnickname%5D=');
+  });
+});
+describe('plan signatures', () => {
+  it('verifies an untouched plan and rejects a tampered venue or time', () => {
+    const city = CITIES.find(c => c.id === 'jaipur') as CityData;
+    const calib = buildCalibration({ startTime: '09:30', endTime: '19:30' }, city, DATE);
+    const p: any = generatePlan(calib, { mobility: 'stairs_okay', maxStrideMinutes: 25, dietary: [], units: 'km', afterDarkMode: 'well_lit' }, { city, candidates: PLACES_DATABASE.filter(v => v.cityId === 'jaipur'), sunsetMinutes: sunsetFor(city, DATE) });
+    p.signature = signPlan(p);
+    expect(verifyPlan(JSON.parse(JSON.stringify(p)))).toBe(true);
+    const venueSwap = JSON.parse(JSON.stringify(p)); venueSwap.blocks[0].venue.placeId = 'pl_injected';
+    expect(verifyPlan(venueSwap)).toBe(false);
+    const timeEdit = JSON.parse(JSON.stringify(p)); timeEdit.blocks[1].startMinutes -= 60;
+    expect(verifyPlan(timeEdit)).toBe(false);
+    const noSig = JSON.parse(JSON.stringify(p)); delete noSig.signature;
+    expect(verifyPlan(noSig)).toBe(false);
+  });
+});

@@ -39,6 +39,7 @@ async function post<T>(path: string, body: unknown, timeoutMs: number): Promise<
 
 /** Errors where the user did something we can explain; everything else falls back to local mode. */
 const USER_ERRORS = new Set(['empty_city', 'unknown_city', 'outside_coverage', 'no_candidates', 'no_change']);
+// bad_signature: the plan was edited locally (or predates signing) — the device rules below take over.
 
 /* ------------------------------------------------------------------ local engine */
 

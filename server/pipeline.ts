@@ -13,6 +13,7 @@ import {
 } from '../src/core/planner';
 import { addDays, localNow, timeStringToMinutes } from '../src/core/time';
 import { cached, reserveCalls } from './budget';
+import { signPlan, verifyPlan } from './sign';
 import { truncateCoords } from '../src/core/geo';
 import type { CityData, Coordinates, DayPlan, TravelerPreferences, VerifiedVenue } from '../src/types/itinerary';
 import { env } from './env';
@@ -181,6 +182,7 @@ export async function generate(body: any): Promise<{ plan: DayPlan; meta: PlanMe
 
   const plan = generatePlan(calibration, prefs, ctx, hints);
   plan.usedFallback = usedFallback;
+  plan.signature = signPlan(plan);
   return { plan, meta: { usedFallback, fallbackReason: reason, llm, source, latencyMs: Date.now() - started } };
 }
 
@@ -221,6 +223,7 @@ const SCENARIOS = ['weather_turned', 'low_battery', 'running_late', 'hungry_now'
 
 export async function adapt(body: any): Promise<{ plan: DayPlan; meta: PlanMeta }> {
   const started = Date.now();
+  if (!verifyPlan(body?.plan)) throw new ApiError(400, 'bad_signature', 'This plan was changed or is out of date. Rebuild your day to continue.');
   const plan = sanitizePlan(body?.plan);
   const scenarios: string[] = Array.isArray(body?.scenarios) ? body.scenarios.filter((s: unknown) => typeof s === 'string' && SCENARIOS.includes(s)) : [];
   const note = typeof body?.note === 'string' ? body.note.slice(0, 140) : '';
@@ -239,6 +242,7 @@ export async function adapt(body: any): Promise<{ plan: DayPlan; meta: PlanMeta 
   if (body?.bonus) {
     const out = addBonusStop(plan, ctx);
     out.usedFallback = true;
+    out.signature = signPlan(out);
     return { plan: out, meta: { usedFallback: true, fallbackReason: 'bonus', llm: false, source, latencyMs: Date.now() - started } };
   }
 
@@ -260,6 +264,7 @@ export async function adapt(body: any): Promise<{ plan: DayPlan; meta: PlanMeta 
   const social = body?.socialShift === 'livelier' ? 'livelier' : 'quieter';
   const out = adaptPlan(plan, { scenarios, note, currentCoords, socialShift: social, hints }, ctx);
   out.usedFallback = usedFallback;
+  out.signature = signPlan(out);
   return { plan: out, meta: { usedFallback, fallbackReason: reason, llm, source, latencyMs: Date.now() - started } };
 }
 
@@ -267,6 +272,7 @@ export async function adapt(body: any): Promise<{ plan: DayPlan; meta: PlanMeta 
 
 export async function swap(body: any): Promise<{ alternatives: VerifiedVenue[]; noNearbyBackup: boolean; source: string; latencyMs: number }> {
   const started = Date.now();
+  if (!verifyPlan(body?.plan)) throw new ApiError(400, 'bad_signature', 'This plan was changed or is out of date. Rebuild your day to continue.');
   const plan = sanitizePlan(body?.plan);
   const blockId = typeof body?.blockId === 'string' ? body.blockId : '';
   const block = plan.blocks.find(b => b.blockId === blockId);

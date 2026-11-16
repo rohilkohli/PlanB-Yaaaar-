@@ -19,6 +19,7 @@ import { DayPlan, PlanBlock } from '../types/itinerary';
 import { haversineKm } from '../core/geo';
 import { nowIn } from '../core/clock';
 import { VenueImage } from './ui';
+import { transitUrl, uberUrl } from '../core/transport';
 import { DataSourcesLink } from '../pages/LegalPages';
 
 interface ActiveCanvasViewProps {
@@ -422,6 +423,15 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                         {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />}
                         <span>{isDone ? 'Done' : 'Mark done'}</span>
                       </button>
+                    </div>
+                    {/* Getting there: public links, no key needed */}
+                    <div className="mt-2.5 flex items-center gap-2 flex-wrap text-[11px]">
+                      <span className="text-olive-slate font-semibold">Get there:</span>
+                      <a href={transitUrl(block.venue)} target="_blank" rel="noopener noreferrer" aria-label={`Metro / bus directions to ${block.venue.name}`}
+                        className="min-h-[36px] px-3 inline-flex items-center rounded-full bg-white/80 border border-white/80 font-semibold text-obsidian hover:bg-white">Metro / bus</a>
+                      <a href={uberUrl(block.venue)} target="_blank" rel="noopener noreferrer" aria-label={`Uber ride to ${block.venue.name}`}
+                        className="min-h-[36px] px-3 inline-flex items-center rounded-full bg-white/80 border border-white/80 font-semibold text-obsidian hover:bg-white">Uber</a>
+                      <span className="text-olive-slate">Auto-rickshaw: show the drop-off on Maps and agree the fare first.</span>
                     </div>
                   </article>
 

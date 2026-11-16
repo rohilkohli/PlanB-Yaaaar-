@@ -10,6 +10,7 @@
  *  - buffers >= 15 min between blocks
  *  - completed blocks are never mutated by adaptation
  */
+import { isClosedOn } from '../data/closures';
 import type {
   AdaptationSummary, BudgetTier, CalibrationData, CityData, Coordinates, DayPlan,
   PlanBlock, TravelerPreferences, VerifiedVenue
@@ -296,7 +297,7 @@ export function rankPool(
   const anchor = calib.anchorCoords;
   const cap = strideCap(g, calib.energy);
   const eligible = ctx.candidates.filter(v => {
-    if (excl.has(v.placeId) || !passesGuardrails(v, g)) return false;
+    if (excl.has(v.placeId) || !passesGuardrails(v, g) || isClosedOn(v.placeId, calib.date)) return false;
     const w = openWindow(v);
     return w.close > win.start + 30 && w.open < win.end - 30;
   });
@@ -323,7 +324,7 @@ export function generatePlan(
   const win = planWindow(calibration, ctx.sunsetMinutes, ctx.now);
   const target = targetBlockCount(win.length, calibration.energy, win.start);
   const cap = strideCap(guardrails, calibration.energy);
-  const pool = ctx.candidates.filter(v => !excl.has(v.placeId) && passesGuardrails(v, guardrails));
+  const pool = ctx.candidates.filter(v => !excl.has(v.placeId) && passesGuardrails(v, guardrails) && !isClosedOn(v.placeId, calibration.date));
   const byId = new Map(pool.map(v => [v.placeId, v]));
   const used = new Set<string>();
 
@@ -428,7 +429,7 @@ export function adaptPlan(plan: DayPlan, opts: AdaptOptions, ctx: PlanContext): 
   if (calib.afterDark === 'before_dark') windowEnd = Math.min(windowEnd, ctx.sunsetMinutes - SUNSET_MARGIN);
   if (windowEnd <= cursor) windowEnd = Math.max(windowEnd, cursor + 60);
 
-  const pool = ctx.candidates.filter(v => !excl.has(v.placeId) && passesGuardrails(v, g));
+  const pool = ctx.candidates.filter(v => !excl.has(v.placeId) && passesGuardrails(v, g) && !isClosedOn(v.placeId, calib.date));
   const preferIds = new Set(remaining.map(b => b.venue.placeId));
   const noteWords = opts.note ? noteKeywords(opts.note) : [];
 

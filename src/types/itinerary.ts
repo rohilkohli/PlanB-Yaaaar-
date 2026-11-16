@@ -142,6 +142,8 @@ export interface DayPlan {
   dataSource?: DataSource;
   /** All blocks done: offer one optional bonus stop or tomorrow's setup. */
   allDone?: boolean;
+  /** Server signature over the plan's identity, venues and times (see server/sign.ts). */
+  signature?: string;
   /** Too late for a daylight-safe plan today; offer tomorrow's setup. */
   needsTomorrow?: boolean;
 }

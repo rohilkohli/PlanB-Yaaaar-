@@ -2,8 +2,8 @@
  * Cost guards for paid Google calls, independent of any per-visitor limit:
  *  - a global daily request cap (per instance) that flips the app to the curated/deterministic path
  *  - a short-lived result cache + in-flight de-duplication so one area is not re-fetched on every tap
- * Whether even short-term caching of Places content is permitted is a Google-terms question to confirm;
- * set PLACES_CACHE_TTL_SEC=0 to disable.
+ * Caching of Places content is OFF by default (Google Places policy: "You must not pre-fetch, cache, or store Places API
+ * content beyond the allowed exceptions"). PLACES_CACHE_TTL_SEC>0 re-enables it at your own legal risk.
  */
 const num = (v: string | undefined, d: number) => (Number.isFinite(Number(v)) && v !== undefined && v !== '' ? Number(v) : d);
 
@@ -27,7 +27,9 @@ const cache = new Map<string, { at: number; value: unknown }>();
 const inflight = new Map<string, Promise<unknown>>();
 
 export async function cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
-  const ttl = num(process.env.PLACES_CACHE_TTL_SEC, 600) * 1000;
+  // Google's Places policy forbids caching Places content (place IDs and short-lived coordinates excepted),
+  // so the default is OFF. Only set PLACES_CACHE_TTL_SEC after counsel confirms an exception applies.
+  const ttl = num(process.env.PLACES_CACHE_TTL_SEC, 0) * 1000;
   if (ttl <= 0) return fn();
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < ttl) return hit.value as T;

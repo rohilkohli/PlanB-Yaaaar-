@@ -35,7 +35,7 @@ jobs:
         env:
           # E2E runs zero-config so it never spends Google/LLM quota
           GOOGLE_PLACES_API_KEY: ""
-          ANTHROPIC_API_KEY: ""
+          GEMINI_API_KEY: ""
       - uses: actions/upload-artifact@v4
         if: always()
         with:

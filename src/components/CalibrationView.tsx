@@ -179,7 +179,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
 
       <div className="mb-5">
         <div className="flex items-center justify-between text-olive-slate text-xs font-semibold mb-2">
-          <span>{step === 1 ? 'Where & when' : step === 2 ? 'Pace & budget' : 'Evening & company'}</span>
+          <span>{step === 1 ? t('calib.step1') : step === 2 ? t('calib.step2') : t('calib.step3')}</span>
           <span className="text-obsidian font-bold">{step} of 3</span>
         </div>
         <div className="grid grid-cols-3 gap-2 w-full" role="group" aria-label="Question progress">
@@ -300,7 +300,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
 
           <div className="pt-5 mt-auto">
             <PrimaryButton onClick={() => (validate() ? setStep(2) : undefined)} className="w-full">
-              <span>Next</span><ArrowRight className="w-4 h-4" aria-hidden="true" />
+              <span>{t('common.next')}</span><ArrowRight className="w-4 h-4" aria-hidden="true" />
             </PrimaryButton>
             <div className="flex items-center justify-center gap-1 mt-2">
               <button type="button" disabled={busy} onClick={build} className="min-h-[44px] px-3 text-xs font-semibold text-olive-slate underline decoration-dotted underline-offset-4">
@@ -323,16 +323,16 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
       {step === 2 && (
         <section className="flex-1 flex flex-col animate-fade-in" aria-labelledby="q2">
           <h1 id="q2" ref={headingRef} tabIndex={-1} className="font-bold text-xl text-obsidian leading-snug tracking-tight mb-4 outline-none">
-            What’s your pace today?
+            {t('calib.pace')}
           </h1>
           <RadioGroup
             label="Energy and pace"
             value={energy}
             onChange={v => { touched(); setEnergy(v); }}
             options={[
-              { value: 'gentle', label: 'Relaxed', description: 'Short walks, quiet cafés, time to sit.', icon: <Coffee className="w-4 h-4" /> },
-              { value: 'balanced', label: 'Moderate', description: 'Steady walking through central neighborhoods.', icon: <Compass className="w-4 h-4" /> },
-              { value: 'active', label: 'Active', description: 'Longer distances, viewpoints, more variety.', icon: <Footprints className="w-4 h-4" /> }
+              { value: 'gentle', label: t('pace.gentle'), description: 'Short walks, quiet cafés, time to sit.', icon: <Coffee className="w-4 h-4" /> },
+              { value: 'balanced', label: t('pace.balanced'), description: 'Steady walking through central neighborhoods.', icon: <Compass className="w-4 h-4" /> },
+              { value: 'active', label: t('pace.active'), description: 'Longer distances, viewpoints, more variety.', icon: <Footprints className="w-4 h-4" /> }
             ]}
           />
           <h2 className="font-bold text-sm text-obsidian mt-5 mb-2" id="budget-label">Budget per stop</h2>
@@ -357,7 +357,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
       {step === 3 && (
         <section className="flex-1 flex flex-col animate-fade-in" aria-labelledby="q3">
           <div className="mb-4">
-            <h1 id="q3" ref={headingRef} tabIndex={-1} className="font-bold text-xl text-obsidian leading-snug tracking-tight outline-none">Evening preference</h1>
+            <h1 id="q3" ref={headingRef} tabIndex={-1} className="font-bold text-xl text-obsidian leading-snug tracking-tight outline-none">{t('calib.evening')}</h1>
             {city && sunset !== null && (
               <p className="text-xs text-olive-slate mt-0.5">Sunset in {city.name} is around {new Date(2000, 0, 1, Math.floor(sunset / 60), sunset % 60).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.</p>
             )}

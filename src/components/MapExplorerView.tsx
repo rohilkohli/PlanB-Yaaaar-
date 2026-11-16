@@ -73,6 +73,8 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
   }, [center, category, offline]);
 
   const active = places?.find(p => p.id === selected) ?? null;
+  // Google's policy: Places results shown on a map must be on a Google Map, so the drawn fallback is for curated data only.
+  const showDrawn = mapState !== 'live' && source !== 'google_places';
 
   // Project lat/lng into the SVG viewport (equirectangular, padded bounding box)
   const pins = useMemo(() => {
@@ -92,7 +94,7 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
   return (
     <main className="flex-1 flex flex-col relative min-h-screen overflow-hidden bg-[#F4F5F7]">
       {mapState === 'live' && <div ref={mapDiv} className="absolute inset-0 w-full h-full" role="region" aria-label="Map of nearby places" />}
-      {mapState !== 'live' && <svg className="absolute inset-0 w-full h-full" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      {showDrawn && <svg className="absolute inset-0 w-full h-full" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <rect width="390" height="844" fill="#F4F5F7" />
         <g stroke="#E3E6EB" strokeWidth="12" strokeLinecap="round" fill="none"><path d="M-20 180 L140 260 L240 210 L410 280" /><path d="M70 70 L90 350 L110 500 L60 860" /><path d="M320 80 L300 320 L340 550 L310 860" /><path d="M-10 620 L150 580 L290 640 L410 590" /></g>
         <g stroke="#FFFFFF" strokeWidth="8" strokeLinecap="round" fill="none"><path d="M-40 290 Q120 280 200 380 T420 460" /><path d="M60 40 L210 260 L380 430" /><path d="M-30 450 L120 430 L220 470 L420 440" /><path d="M120 200 L180 520 L140 780" /><path d="M220 120 L270 410 L230 730" /></g>
@@ -127,7 +129,7 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
       </div>
 
       {/* Pins */}
-      {mapState !== 'live' && <div className="absolute inset-0 z-10 pointer-events-none">
+      {showDrawn && <div className="absolute inset-0 z-10 pointer-events-none">
         <span className="absolute w-4 h-4 rounded-full bg-sky-600 border-2 border-white shadow" style={{ left: `${pins.me.x}%`, top: `${pins.me.y}%`, transform: 'translate(-50%,-50%)' }} aria-hidden="true" />
         {pins.items.map(({ p, x, y }, i) => (
           <button key={p.id} type="button" onClick={() => openDetails(p)} aria-label={`${i + 1}, ${p.name}, ${p.rating} stars`}
@@ -148,6 +150,7 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
         {places && places.length > 0 && (
           <>
             {note && <p className="mx-5 mb-1.5 text-[11px] text-olive-slate bg-white/90 rounded-full px-3 py-1 inline-block">{note}</p>}
+            {mapState === 'drawing' && source === 'google_places' && <p role="status" className="mx-5 mb-1.5 text-[11px] text-olive-slate bg-white/90 rounded-full px-3 py-1 inline-block">The map is unavailable right now. Showing the list.</p>}
             <ul className="flex items-stretch gap-3.5 px-5 overflow-x-auto no-scrollbar snap-x snap-mandatory">
               {places.map((p, i) => (
                 <li key={p.id} className="shrink-0 w-[280px] snap-center">
@@ -195,7 +198,7 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
             {details?.reviews?.length ? (
               <ul className="space-y-2.5">{details.reviews.map((r, i) => (
                 <li key={i} className="p-3 rounded-2xl bg-white border border-black/5 text-xs text-gray-700">
-                  <p className="font-semibold text-gray-900">{'★'.repeat(Math.round(r.rating))} <span className="font-medium text-gray-600">· {r.author} · {r.when}</span></p>
+                  <p className="font-semibold text-gray-900">{'★'.repeat(Math.round(r.rating))} <span className="font-medium text-gray-600">· {r.authorUri ? <a href={r.authorUri} target="_blank" rel="noopener noreferrer" className="underline">{r.author}</a> : r.author} · {r.when} · <span translate="no" className="notranslate">Google Maps</span></span></p>
                   <p className="mt-1">{r.text}</p>
                 </li>))}</ul>
             ) : <p className="text-xs text-gray-600">{active.source === 'google_places' ? 'Review text isn’t available for this place right now. See all reviews in Maps.' : 'Reviews appear here when live Google data is connected.'}</p>}

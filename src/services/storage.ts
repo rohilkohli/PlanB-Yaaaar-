@@ -7,7 +7,27 @@
  *  - Closed-venue flags live in sessionStorage ("excludes Place ID from session")
  */
 import { del, get, set } from 'idb-keyval';
-import type { DayPlan, TravelerPreferences, UndoState } from '../types/itinerary';
+import type { DayPlan, TravelerPreferences, UndoState, VerifiedVenue } from '../types/itinerary';
+
+/**
+ * Google's Places policy: Places content must not be stored beyond place IDs (and coordinates for up to 30 days).
+ * Before a plan is saved, Google-sourced venues are reduced to id + coordinates + our own schedule; the name, address,
+ * rating and hours are re-fetched when the plan is opened online. (Curated, hand-written venues are ours and stay.)
+ */
+export function redactVenue(v: VerifiedVenue): VerifiedVenue {
+  if (v.source !== 'google_places') return v;
+  return {
+    ...v, name: '', address: '', neighborhood: '', subCategory: '', openHoursToday: '', opensAt: '00:00', closesAt: '23:59', periods: undefined,
+    rating: 0, reviewsCount: 0, noiseLevel: '', imageUrl: '', priceLevel: '₹', googleTypes: undefined,
+    mapsUrl: `https://www.google.com/maps/search/?api=1&query=${v.coords.lat},${v.coords.lng}&query_place_id=${encodeURIComponent(v.placeId)}`,
+    appleMapsUrl: `https://maps.apple.com/?ll=${v.coords.lat},${v.coords.lng}`
+  };
+}
+
+export function redactPlan(plan: DayPlan): DayPlan {
+  const blocks = plan.blocks.map(b => (b.venue.source === 'google_places' ? { ...b, venue: redactVenue(b.venue), fitLine: '' } : b));
+  return { ...plan, blocks, previousSnapshot: plan.previousSnapshot ? redactPlan(plan.previousSnapshot) : null };
+}
 
 const KEYS = {
   ACTIVE_PLAN: 'planb_active_plan_v3',
@@ -40,6 +60,7 @@ class StorageService {
   private prefs: TravelerPreferences = { ...DEFAULT_PREFS };
   private ready = false;
   private blocked = false;
+  private allowPlacesStorage = false;
   private undoTimer: ReturnType<typeof setTimeout> | null = null;
   private undoState: UndoState = { active: false, message: '', expiresAt: null };
   private listeners = new Set<(s: UndoState) => void>();
@@ -74,7 +95,7 @@ class StorageService {
 
   async setActivePlan(plan: DayPlan, undoMessage?: string): Promise<void> {
     this.plan = plan;
-    const payload: Saved<DayPlan> = { data: plan, savedAt: Date.now() };
+    const payload: Saved<DayPlan> = { data: this.allowPlacesStorage ? plan : redactPlan(plan), savedAt: Date.now() };
     let ok = false;
     try { await set(KEYS.ACTIVE_PLAN, payload); ok = true; } catch { /* fall back below */ }
     if (lsSet(KEYS.ACTIVE_PLAN, JSON.stringify(payload))) ok = true;
@@ -89,6 +110,8 @@ class StorageService {
   }
 
   isStorageBlocked(): boolean { return this.blocked; }
+  /** Set from /api/config; stays false (strict) unless the operator enables PLACES_OFFLINE_STORAGE=allow. */
+  setAllowPlacesStorage(v: boolean) { this.allowPlacesStorage = v; }
 
   /* ---- preferences */
   getPreferences(): TravelerPreferences { return this.prefs; }

@@ -47,7 +47,7 @@ const LIST_MASK = [
 const DETAIL_MASK = [
   'id', 'displayName', 'formattedAddress', 'rating', 'userRatingCount', 'nationalPhoneNumber', 'websiteUri', 'googleMapsUri',
   'regularOpeningHours.weekdayDescriptions', 'currentOpeningHours.openNow', 'reviews.rating', 'reviews.relativePublishTimeDescription',
-  'reviews.text.text', 'reviews.authorAttribution.displayName', 'photos.name'
+  'reviews.text.text', 'reviews.authorAttribution.displayName', 'reviews.authorAttribution.uri', 'photos.name', 'photos.authorAttributions'
 ].join(',');
 
 /** "Best of best": rating weighted by how many people agree (log of review count). */
@@ -161,7 +161,7 @@ export async function placeDetails(id: string): Promise<PlaceDetails | null> {
     hours: p.regularOpeningHours?.weekdayDescriptions ?? [], openNow: p.currentOpeningHours?.openNow,
     photoNames: ((p.photos ?? []) as any[]).map(x => x.name).filter((n: string) => /^places\/[^/]+\/photos\/[^/]+$/.test(n)).slice(0, 3),
     reviews: ((p.reviews ?? []) as any[]).slice(0, 4).map(r => ({
-      rating: r.rating, when: r.relativePublishTimeDescription ?? '', text: String(r.text?.text ?? '').slice(0, 280), author: r.authorAttribution?.displayName ?? 'Traveler'
+      rating: r.rating, when: r.relativePublishTimeDescription ?? '', text: String(r.text?.text ?? '').slice(0, 280), author: r.authorAttribution?.displayName ?? 'Traveler', authorUri: typeof r.authorAttribution?.uri === 'string' && r.authorAttribution.uri.startsWith('https://') ? r.authorAttribution.uri : undefined
     }))
   };
 }
@@ -181,4 +181,35 @@ export async function placePhoto(name: string, widthPx: number): Promise<{ bytes
   const img = await fetch(j.photoUri, { signal: AbortSignal.timeout(4000) });
   if (!img.ok) return null;
   return { bytes: await img.arrayBuffer(), type: img.headers.get('content-type') || 'image/jpeg' };
+}
+
+export interface PhotoRef { name: string; authors: Array<{ name: string; uri?: string }> }
+
+/** Photo references only — the cheapest lookup (Place Details Photos SKU). Includes the author attributions Google requires. */
+export async function placePhotoRefs(id: string): Promise<PhotoRef[]> {
+  if (!env().placesKey || !/^[A-Za-z0-9_-]{10,200}$/.test(id)) return [];
+  if (!reserveCalls(1)) return [];
+  const res = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(id)}`, {
+    headers: { 'X-Goog-Api-Key': env().placesKey!, 'X-Goog-FieldMask': 'photos.name,photos.authorAttributions' },
+    signal: AbortSignal.timeout(3500)
+  });
+  if (!res.ok) return [];
+  const p: any = await res.json();
+  return ((p.photos ?? []) as any[])
+    .filter(x => /^places\/[^/]+\/photos\/[^/]+$/.test(x.name))
+    .slice(0, 2)
+    .map(x => ({ name: x.name, authors: ((x.authorAttributions ?? []) as any[]).map(a => ({ name: String(a.displayName ?? ''), uri: typeof a.uri === 'string' && a.uri.startsWith('https://') ? a.uri : undefined })) }));
+}
+
+/** Name + address (+ Google Maps link) for re-showing a saved stop. Pro-tier fields only; nothing here is stored by PlanB. */
+export async function placeSummary(id: string): Promise<{ name: string; address: string; mapsUri?: string } | null> {
+  if (!env().placesKey || !/^[A-Za-z0-9_-]{10,200}$/.test(id)) return null;
+  if (!reserveCalls(1)) return null;
+  const res = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(id)}`, {
+    headers: { 'X-Goog-Api-Key': env().placesKey!, 'X-Goog-FieldMask': 'displayName,formattedAddress,googleMapsUri' },
+    signal: AbortSignal.timeout(3500)
+  });
+  if (!res.ok) return null;
+  const p: any = await res.json();
+  return p.displayName?.text ? { name: p.displayName.text, address: p.formattedAddress ?? '', mapsUri: typeof p.googleMapsUri === 'string' ? p.googleMapsUri : undefined } : null;
 }

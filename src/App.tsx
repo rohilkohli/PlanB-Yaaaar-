@@ -15,7 +15,7 @@ import { UndoToast } from './components/UndoToast';
 import { OfflineBadge } from './components/OfflineBadge';
 
 import { storage } from './services/storage';
-import { adaptRemote, buildPlan, fetchRainHint, PlanError } from './services/planService';
+import { adaptRemote, buildPlan, fetchRainHint, hydratePlan, loadServerConfig, PlanError } from './services/planService';
 import { track, ttfpMs } from './services/analytics';
 import { navigate, useRoute } from './router';
 import { applyBlockSwap, undoMutation } from './core/planner';
@@ -51,6 +51,8 @@ export const App: React.FC = () => {
       if (!alive) return;
       const saved = storage.getActivePlan();
       setPlan(saved);
+      loadServerConfig().then(c => storage.setAllowPlacesStorage(c.placesOfflineStorage));
+      if (saved) hydratePlan(saved).then(h => { if (alive && h !== saved) setPlan(h); });
       setPreferences(storage.getPreferences());
       setReady(true);
     });

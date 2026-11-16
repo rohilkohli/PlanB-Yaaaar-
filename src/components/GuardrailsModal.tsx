@@ -106,6 +106,14 @@ export const GuardrailsModal: React.FC<Props> = ({ preferences, lang, onLangChan
           <p className="text-[11px] text-olive-slate mt-1.5">Hindi covers the main screens. Venue descriptions remain in English for now.</p>
         </section>
 
+        <section aria-label={t('emergency.title')} className="rounded-2xl bg-red-50 border border-red-200 p-3.5 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold text-red-900">{t('emergency.title')}</p>
+            <p className="text-xs text-red-900/80">{t('emergency.note')}</p>
+          </div>
+          <a href="tel:112" className="min-h-[44px] min-w-[72px] px-4 rounded-full bg-red-700 text-white text-sm font-bold inline-flex items-center justify-center">112</a>
+        </section>
+
         <section className="rounded-2xl bg-white/70 border border-white/80 p-3.5 flex gap-2.5 text-xs text-olive-slate">
           <ShieldCheck className="w-4 h-4 text-spruce shrink-0 mt-0.5" aria-hidden="true" />
           <p>No account, no tracking. Your plan and preferences stay on this device and are deleted after 14 days. Location is only used when you ask for it.</p>

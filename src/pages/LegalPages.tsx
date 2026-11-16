@@ -3,6 +3,17 @@ import { ArrowLeft } from 'lucide-react';
 import { navigate } from '../router';
 
 export const REPO_ISSUES = 'https://github.com/rohilkohli/PlanB-Yaaaar-/issues';
+const GOOGLE_TOS = 'https://cloud.google.com/maps-platform/terms';
+const GOOGLE_PRIVACY = 'https://policies.google.com/privacy';
+
+/** Contact line: a real email when the operator has configured CONTACT_EMAIL, else the public issue tracker. */
+export const ContactLine: React.FC = () => {
+  const [email, setEmail] = React.useState<string | null>(null);
+  React.useEffect(() => { fetch('/api/config').then(r => r.json()).then((j: { contactEmail?: string | null }) => setEmail(j.contactEmail ?? null)).catch(() => undefined); }, []);
+  return email
+    ? <>Contact: <a className="font-semibold text-spruce underline underline-offset-2" href={`mailto:${email}`}>{email}</a>.</>
+    : <>Contact: open an issue at <a className="font-semibold text-spruce underline underline-offset-2" href={REPO_ISSUES} target="_blank" rel="noopener noreferrer">github.com/rohilkohli/PlanB-Yaaaar-/issues</a>.</>;
+};
 const UPDATED = '16 November 2026';
 
 const H: React.FC<{ children: React.ReactNode }> = ({ children }) => <h2 className="font-bold text-base text-obsidian mt-6 mb-1.5">{children}</h2>;
@@ -55,7 +66,7 @@ export const PrivacyPage: React.FC = () => (
     ]} />
 
     <H>Location</H>
-    <P>Your location is used only when you tap “Use my location” or tick the location box when adapting your day. It is read once, not tracked in the background, and not saved on our servers. Coordinates are sent to our server and to Google to find nearby places, and are rounded to roughly city level in our logs.</P>
+    <P>Saved plans keep only what is ours (times, order, your choices) and each stop’s Google place ID and coordinates, which Google’s rules allow. Names, addresses, ratings and hours from Google are fetched again when you open the plan online and are not stored. Your location is used only when you tap “Use my location” or tick the location box when adapting your day. It is read once, not tracked in the background, and not saved on our servers. Coordinates are sent to our server and to Google to find nearby places, and are rounded to roughly city level in our logs.</P>
 
     <H>What our server receives</H>
     <L items={[
@@ -81,11 +92,18 @@ export const PrivacyPage: React.FC = () => (
       'Because we hold no account or identifier for you, there is no profile on our side to access or delete. If you believe we hold something about you, tell us (below) and we will look.'
     ]} />
 
+    <H>Why we collect this (purposes)</H>
+    <L items={[
+      'Build and adjust your day plan: your choices, optional note, and location if you share it.',
+      'Keep the service working and fair: your IP address (hashed daily) for limits, and technical logs.',
+      'Improve the product: anonymous usage events that cannot be linked to you.'
+    ]} />
+
     <H>Children</H>
     <P>PlanB is not intended for people under 18.</P>
 
     <H>Changes and contact</H>
-    <P>If this changes materially we will update this page and its date. Questions or requests: open an issue at <A href={REPO_ISSUES}>github.com/rohilkohli/PlanB-Yaaaar-/issues</A>.</P>
+    <P>If this changes materially we will update this page and its date. Questions or requests: <ContactLine /></P>
   </Shell>
 );
 
@@ -95,6 +113,9 @@ export const TermsPage: React.FC = () => (
 
     <H>What PlanB is</H>
     <P>A planning aid. It suggests a paced day and reshapes it when your day changes. It is not a guide, a safety service or a booking service.</P>
+
+    <H>Google Maps</H>
+    <P>PlanB uses <span translate="no" className="notranslate">Google Maps</span> Platform. By using it you are also bound by the <A href={GOOGLE_TOS}>Google Maps Platform Terms of Service</A> and the <A href={GOOGLE_PRIVACY}>Google Privacy Policy</A>.</P>
 
     <H>Your judgment comes first</H>
     <P>Street conditions, opening hours, weather and safety change constantly. Suggestions, evening-area choices and daylight cut-offs, and opening hours may be wrong or out of date. Check a venue is open and the area feels comfortable before you go, and change plans whenever something feels off. Nothing in the app is advice about your personal safety. In an emergency, contact local emergency services.</P>
@@ -113,7 +134,7 @@ export const TermsPage: React.FC = () => (
     <P>PlanB is provided “as is” and “as available”, without promises that it will be accurate, uninterrupted or suitable for your trip. To the extent the law allows, we are not liable for loss, injury or inconvenience arising from using it or relying on its suggestions. Nothing here limits rights you cannot lawfully give up.</P>
 
     <H>Changes and contact</H>
-    <P>We may change the service or these terms; continuing to use PlanB after a change means you accept it. Contact: <A href={REPO_ISSUES}>github.com/rohilkohli/PlanB-Yaaaar-/issues</A>.</P>
+    <P>We may change the service or these terms; continuing to use PlanB after a change means you accept it. <ContactLine /></P>
   </Shell>
 );
 

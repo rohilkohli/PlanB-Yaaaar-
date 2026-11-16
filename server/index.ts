@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 import { nodeApi } from './node';
+import { securityHeaders } from './headers';
 
 try { process.loadEnvFile('.env'); } catch { /* no .env: zero-config mode */ }
 
@@ -18,6 +19,7 @@ createServer(async (req, res) => {
   let file = normalize(join(DIST, urlPath));
   if (!file.startsWith(DIST)) { res.statusCode = 403; res.end(); return; }
   if (!existsSync(file) || statSync(file).isDirectory()) file = join(DIST, 'index.html'); // SPA fallback (/today, /preferences)
+  for (const [k, v] of Object.entries(securityHeaders())) res.setHeader(k, v);
   const ext = extname(file);
   res.setHeader('Content-Type', TYPES[ext] ?? 'application/octet-stream');
   if (file.endsWith('sw.js') || file.endsWith('index.html')) res.setHeader('Cache-Control', 'no-cache');

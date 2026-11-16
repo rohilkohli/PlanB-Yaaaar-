@@ -22,12 +22,12 @@ interface Props {
 }
 
 const SCENARIOS = [
-  { id: 'running_late', label: 'Running late', icon: Clock },
-  { id: 'low_battery', label: 'Low battery', icon: Battery },
-  { id: 'weather_turned', label: 'Weather turned', icon: CloudRain },
-  { id: 'hungry_now', label: 'Hungry now', icon: Utensils },
-  { id: 'shift_social', label: 'Shift social', icon: Users },
-  { id: 'early_night', label: 'Early night', icon: Moon }
+  { id: 'running_late', label: t('chip.late'), icon: Clock },
+  { id: 'low_battery', label: t('chip.battery'), icon: Battery },
+  { id: 'weather_turned', label: t('chip.weather'), icon: CloudRain },
+  { id: 'hungry_now', label: t('chip.hungry'), icon: Utensils },
+  { id: 'shift_social', label: t('chip.social'), icon: Users },
+  { id: 'early_night', label: t('chip.early'), icon: Moon }
 ] as const;
 
 export const AdaptBottomSheet: React.FC<Props> = ({ currentPlan, isOffline, busy, error, rainLikely, onAdapt, onClose }) => {

@@ -21,6 +21,7 @@ import { nowIn } from '../core/clock';
 import { VenueImage } from './ui';
 import { transitUrl, uberUrl } from '../core/transport';
 import { DataSourcesLink } from '../pages/LegalPages';
+import { t } from '../i18n';
 
 interface ActiveCanvasViewProps {
   plan: DayPlan;
@@ -39,6 +40,8 @@ interface ActiveCanvasViewProps {
   units: 'km' | 'mi';
   notice?: string | null;
 }
+
+const vName = (v: { name: string }) => v.name || 'Saved stop';
 
 export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
   plan,
@@ -119,7 +122,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
             onClick={() => onNewDay()}
             className="min-h-[44px] px-3.5 rounded-full bg-white/75 backdrop-blur-xl border border-white/80 text-xs font-bold text-obsidian hover:bg-white/90 active:scale-95 transition-all shadow-sm"
           >
-            New day
+            {t('today.newDay')}
           </button>
 
           <button
@@ -233,7 +236,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           }`}
         >
           <List className="w-3.5 h-3.5" />
-          <span>Timeline</span>
+          <span>{t('today.timeline')}</span>
         </button>
         <button
           type="button"
@@ -245,7 +248,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           }`}
         >
           <Navigation className="w-3.5 h-3.5" />
-          <span>Map Overview</span>
+          <span>{t('today.map')}</span>
         </button>
       </div>
 
@@ -265,7 +268,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                     : 'bg-white/70 backdrop-blur-md text-olive-slate border border-white/80 hover:bg-white/90'
                 }`}
               >
-                {tab === 'all' ? 'All' : tab}
+                {tab === 'all' ? t('filter.all') : t('filter.' + tab)}
               </button>
             ))}
           </div>
@@ -282,7 +285,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                 <React.Fragment key={block.blockId}>
                   {/* STOP CARD WITH GLASSMORPHISM */}
                   <article
-                    aria-label={`Stop ${block.sequence}: ${block.venue.name}`}
+                    aria-label={`Stop ${block.sequence}: ${vName(block.venue)}`}
                     className={`w-full bg-white/75 backdrop-blur-xl rounded-3xl p-4 sm:p-5 border relative transition-all ${
                       block.isAdapted
                         ? 'border-chartreuse/80 ring-2 ring-chartreuse/40 shadow-[0_10px_32px_rgba(184,238,48,0.22)]'
@@ -298,7 +301,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                       </div>
                     ) : isNextUp ? (
                       <div className="absolute -top-2.5 right-4 bg-chartreuse text-obsidian text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-sm border border-white/40">
-                        Up Next
+                        {t('card.upNext')}
                       </div>
                     ) : null}
 
@@ -327,7 +330,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                           type="button"
                           onClick={() => toggleTip(block.blockId)}
                           title={openTipBlockIds.has(block.blockId) ? "Hide tip" : "View tip"}
-                          aria-label={`Solo tip for ${block.venue.name}`}
+                          aria-label={`Solo tip for ${vName(block.venue)}`}
                           aria-expanded={openTipBlockIds.has(block.blockId)}
                           className={`w-11 h-11 -my-2.5 -mr-1.5 rounded-full flex items-center justify-center transition-all ${
                             openTipBlockIds.has(block.blockId)
@@ -351,7 +354,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                             isDone ? 'line-through text-olive-slate' : ''
                           }`}
                         >
-                          {block.venue.name}
+                          {vName(block.venue)}
                         </h2>
                         <p className="text-xs text-olive-slate mt-0.5 line-clamp-3">
                           {block.whyItFits}
@@ -365,11 +368,14 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                         <VenueImage
                           src={block.venue.imageUrl}
                           placeId={block.venue.placeId}
+                          autoLoad={isNextUp}
                           className={`w-full h-full object-cover ${isDone ? 'grayscale-[60%]' : ''}`}
                         />
-                        <span className="absolute bottom-1 right-1 bg-obsidian/85 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-sm shadow-xs">
-                          ★ {block.venue.rating}
-                        </span>
+                        {block.venue.rating > 0 && (
+                          <span className="absolute top-1 right-1 bg-obsidian/85 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-sm shadow-xs">
+                            ★ {block.venue.rating}
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -391,7 +397,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => onMapsClick(block)}
-                        aria-label={`Open ${block.venue.name} in Maps`}
+                        aria-label={`Open ${vName(block.venue)} in Maps`}
                         className="min-h-[44px] rounded-full bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-transform shadow-[0_4px_14px_rgba(184,238,48,0.35)] hover:shadow-[0_6px_18px_rgba(184,238,48,0.45)]"
                       >
                         <span>Maps</span>
@@ -402,19 +408,19 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                         type="button"
                         onClick={() => onOpenSwap(block)}
                         disabled={isOffline || isDone}
-                        aria-label={`Swap, ${block.venue.name}`}
+                        aria-label={`Swap, ${vName(block.venue)}`}
                         title={isOffline ? 'Reconnect to swap' : undefined}
                         className="min-h-[44px] rounded-full bg-white/70 backdrop-blur-md text-obsidian text-xs font-semibold border border-white/80 flex items-center justify-center gap-1 hover:bg-white/90 active:scale-95 transition-transform shadow-2xs disabled:opacity-45 disabled:cursor-not-allowed"
                       >
                         <RefreshCw className="w-3 h-3" />
-                        <span>Swap</span>
+                        <span>{t('card.swap')}</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => onToggleBlockDone(block.blockId)}
                         aria-pressed={isDone}
-                        aria-label={isDone ? `Done, ${block.venue.name}` : `Mark done, ${block.venue.name}`}
+                        aria-label={isDone ? `Done, ${vName(block.venue)}` : `Mark done, ${vName(block.venue)}`}
                         className={`min-h-[44px] rounded-full text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition-transform ${
                           isDone
                             ? 'bg-spruce text-white shadow-sm'
@@ -422,15 +428,15 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                         }`}
                       >
                         {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />}
-                        <span>{isDone ? 'Done' : 'Mark done'}</span>
+                        <span>{isDone ? t('card.done') : t('card.markDone')}</span>
                       </button>
                     </div>
                     {/* Getting there: public links, no key needed */}
                     <div className="mt-2.5 flex items-center gap-2 flex-wrap text-[11px]">
                       <span className="text-olive-slate font-semibold">Get there:</span>
-                      <a href={transitUrl(block.venue)} target="_blank" rel="noopener noreferrer" aria-label={`Metro / bus directions to ${block.venue.name}`}
+                      <a href={transitUrl(block.venue)} target="_blank" rel="noopener noreferrer" aria-label={`Metro / bus directions to ${vName(block.venue)}`}
                         className="min-h-[36px] px-3 inline-flex items-center rounded-full bg-white/80 border border-white/80 font-semibold text-obsidian hover:bg-white">Metro / bus</a>
-                      <a href={uberUrl(block.venue)} target="_blank" rel="noopener noreferrer" aria-label={`Uber ride to ${block.venue.name}`}
+                      <a href={uberUrl(block.venue)} target="_blank" rel="noopener noreferrer" aria-label={`Uber ride to ${vName(block.venue)}`}
                         className="min-h-[36px] px-3 inline-flex items-center rounded-full bg-white/80 border border-white/80 font-semibold text-obsidian hover:bg-white">Uber</a>
                       <span className="text-olive-slate">Auto-rickshaw: show the drop-off on Maps and agree the fare first.</span>
                     </div>
@@ -486,7 +492,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           {/* Understated Glass End Action */}
           <div className="mt-6 mb-2 p-4 rounded-2xl bg-white/75 backdrop-blur-xl border border-white/80 flex items-center justify-between gap-3 shadow-glass-card">
             <div>
-              <h4 className="font-bold text-xs text-obsidian">Need to adjust your day?</h4>
+              <h4 className="font-bold text-xs text-obsidian">{t('today.needAdjust')}</h4>
               <p className="text-[11px] text-olive-slate">Rain, low battery, or change of pace.</p>
             </div>
             <button
@@ -494,14 +500,14 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
               onClick={onOpenAdapt}
               className="min-h-[44px] px-4 rounded-full bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold shrink-0 active:scale-95 transition-transform shadow-[0_4px_14px_rgba(184,238,48,0.35)] hover:shadow-[0_6px_18px_rgba(184,238,48,0.45)]"
             >
-              Adjust Plan
+              {t('today.adjust')}
             </button>
           </div>
 
           <p className="mt-4 mb-1 px-1 text-[11px] leading-relaxed text-olive-slate flex gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-spruce shrink-0 mt-0.5" aria-hidden="true" />
             <span>
-              {plan.dataSource === 'google_places' ? 'Place data from Google Maps. ' : 'Hours from a curated listing — confirm in Maps. '}
+              {plan.dataSource === 'google_places' ? <><span translate="no" className="notranslate">Google Maps</span> place data. </> : 'Hours from a curated listing — confirm in Maps. '}
               Street conditions change, so your own judgment always comes first. <DataSourcesLink />
             </span>
           </p>
@@ -644,13 +650,13 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                 <div className="w-16 h-16 rounded-xl overflow-hidden bg-white/60 shrink-0 border border-white/80">
                   <img
                     src={selectedMapBlock.venue.imageUrl}
-                    alt={selectedMapBlock.venue.name}
+                    alt={vName(selectedMapBlock.venue)}
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-sm text-obsidian truncate">
-                    {selectedMapBlock.venue.name}
+                    {vName(selectedMapBlock.venue)}
                   </h3>
                   <p className="text-xs text-olive-slate line-clamp-2 mt-0.5">
                     {selectedMapBlock.whyItFits}

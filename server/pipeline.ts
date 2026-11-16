@@ -301,7 +301,9 @@ export function logEvent(name: string, props: Record<string, unknown> = {}) {
   }
   const isError = name === 'server_error' || name === 'places_error';
   const severity = isError ? 'ERROR' : 'INFO';
-  if (process.env.NODE_ENV !== 'test') console.log(JSON.stringify({ severity, message: name, event: name, ...safe }));
+  // Cloud Error Reporting groups ERROR entries that carry a stack trace in `message` and a serviceContext.
+  const message = isError && typeof safe.stack_trace === 'string' ? `${String(safe.message ?? name)}\n${safe.stack_trace}` : name;
+  if (process.env.NODE_ENV !== 'test') console.log(JSON.stringify({ severity, message, event: name, serviceContext: { service: 'planb' }, ...safe }));
 }
 
 export { approxTimezone, DEFAULT_PREFS };

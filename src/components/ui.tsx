@@ -192,29 +192,50 @@ export const GlassButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>
   </button>
 );
 
-/** Venue photo: uses the given image, else loads the venue's live Google photo (via our server), else a placeholder. */
-export const VenueImage: React.FC<{ src?: string; placeId?: string; className?: string }> = ({ src, placeId, className = '' }) => {
+/**
+ * Venue photo. Curated venues use their own image. Google venues load a photo on demand through our server (the key never
+ * reaches the browser) and show the photographer's attribution, as Google's Places policy requires.
+ * `autoLoad` loads immediately (used for the "Up next" card); other cards offer a tap-to-load button to keep costs down.
+ */
+export const VenueImage: React.FC<{ src?: string; placeId?: string; className?: string; autoLoad?: boolean }> = ({ src, placeId, className = '', autoLoad = false }) => {
   const [failed, setFailed] = React.useState(false);
-  const [live, setLive] = React.useState<string | null>(null);
+  const [requested, setRequested] = React.useState(autoLoad);
+  const [live, setLive] = React.useState<{ url: string; authors: Array<{ name: string; uri?: string }> } | null>(null);
+  const isGoogle = !src && !!placeId?.startsWith('ChIJ');
+
+  React.useEffect(() => { if (autoLoad) setRequested(true); }, [autoLoad]);
   React.useEffect(() => {
-    if (src || !placeId?.startsWith('ChIJ') || typeof navigator !== 'undefined' && navigator.onLine === false) return;
+    if (!isGoogle || !requested || (typeof navigator !== 'undefined' && navigator.onLine === false)) return;
     let alive = true;
-    fetch(`/api/places/details?id=${encodeURIComponent(placeId)}`, { signal: AbortSignal.timeout(6000) })
+    fetch(`/api/places/photo-refs?id=${encodeURIComponent(placeId!)}`, { signal: AbortSignal.timeout(6000) })
       .then(r => (r.ok ? r.json() : null))
-      .then((j: { details?: { photoNames?: string[] } | null } | null) => {
-        const name = j?.details?.photoNames?.[0];
-        if (alive && name) setLive(`/api/places/photo?name=${encodeURIComponent(name)}&w=800`);
+      .then((j: { photos?: Array<{ name: string; authors: Array<{ name: string; uri?: string }> }> } | null) => {
+        const ph = j?.photos?.[0];
+        if (alive && ph) setLive({ url: `/api/places/photo?name=${encodeURIComponent(ph.name)}&w=640`, authors: ph.authors });
       })
       .catch(() => undefined);
     return () => { alive = false; };
-  }, [src, placeId]);
-  const url = src || live;
-  if (!url || failed) {
-    return (
-      <div aria-hidden="true" className={`flex items-center justify-center bg-gradient-to-br from-recessed to-recessed-dark text-spruce/60 ${className}`}>
-        <MapPin className="w-6 h-6" />
-      </div>
-    );
-  }
-  return <img src={url} alt="" loading="lazy" onError={() => setFailed(true)} className={className} />;
+  }, [isGoogle, requested, placeId]);
+
+  const url = src || live?.url;
+  const placeholder = (
+    <div className={`flex flex-col items-center justify-center bg-gradient-to-br from-recessed to-recessed-dark text-spruce/70 ${className}`}>
+      <MapPin className="w-5 h-5" aria-hidden="true" />
+      {isGoogle && !requested && (
+        <button type="button" onClick={() => setRequested(true)} className="mt-1 min-h-[24px] px-2 rounded-full bg-white/80 text-[10px] font-bold text-obsidian">Show photo</button>
+      )}
+    </div>
+  );
+  if (!url || failed) return placeholder;
+  const author = live?.authors?.[0];
+  return (
+    <div className={`relative ${className}`}>
+      <img src={url} alt="" loading="lazy" onError={() => setFailed(true)} className="w-full h-full object-cover" />
+      {live && (
+        <span className="absolute left-0 right-0 bottom-0 bg-black/75 text-white text-[9px] leading-tight px-1 py-0.5 truncate">
+          <span translate="no" className="notranslate">Google Maps</span>{author ? <> · {author.uri ? <a href={author.uri} target="_blank" rel="noopener noreferrer" className="underline">{author.name}</a> : author.name}</> : null}
+        </span>
+      )}
+    </div>
+  );
 };

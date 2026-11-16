@@ -164,3 +164,33 @@ export async function fetchReverse(c: Coordinates): Promise<{ name: string } | n
     return j.place?.name ? { name: j.place.name } : null;
   } catch { return null; }
 }
+
+/** Re-fetch name/address for saved Google venues (they are never persisted). In-memory only. */
+export async function hydratePlan(plan: DayPlan): Promise<DayPlan> {
+  if (storage.isOffline()) return plan;
+  const need = plan.blocks.filter(b => b.venue.source === 'google_places' && !b.venue.name);
+  if (!need.length) return plan;
+  const found = new Map<string, { name: string; address: string; mapsUri?: string }>();
+  await Promise.all(need.map(async b => {
+    try {
+      const res = await fetch(`/api/places/summary?id=${encodeURIComponent(b.venue.placeId)}`, { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) return;
+      const j = (await res.json()) as { summary?: { name: string; address: string; mapsUri?: string } | null };
+      if (j.summary) found.set(b.venue.placeId, j.summary);
+    } catch { /* stays as a saved stop */ }
+  }));
+  if (!found.size) return plan;
+  return { ...plan, blocks: plan.blocks.map(b => {
+    const f = found.get(b.venue.placeId);
+    return f ? { ...b, venue: { ...b.venue, name: f.name, address: f.address, mapsUrl: f.mapsUri ?? b.venue.mapsUrl } } : b;
+  }) };
+}
+
+export async function loadServerConfig(): Promise<{ placesOfflineStorage: boolean; contactEmail: string | null }> {
+  try {
+    const res = await fetch('/api/config', { signal: AbortSignal.timeout(3000) });
+    if (!res.ok || !(res.headers.get('content-type') || '').includes('json')) throw new Error('config');
+    const j = (await res.json()) as { placesOfflineStorage?: boolean; contactEmail?: string | null };
+    return { placesOfflineStorage: !!j.placesOfflineStorage, contactEmail: j.contactEmail ?? null };
+  } catch { return { placesOfflineStorage: false, contactEmail: null }; }
+}

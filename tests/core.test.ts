@@ -256,3 +256,31 @@ describe('plan signatures', () => {
     expect(verifyPlan(noSig)).toBe(false);
   });
 });
+
+import { redactPlan, redactVenue } from '../src/services/storage';
+describe('Google Places content is never persisted (Google Places policy)', () => {
+  const google = (over: object = {}) => ({
+    ...PLACES_DATABASE[0], placeId: 'ChIJabcdefghij', source: 'google_places' as const, name: 'Hawa Mahal', address: 'Hawa Mahal Rd, Jaipur',
+    rating: 4.5, reviewsCount: 169000, openHoursToday: '09:00 – 18:30', periods: [[540, 1110]] as Array<[number, number]>, imageUrl: 'x', ...over
+  });
+  it('strips name, address, rating and hours from Google venues but keeps id and coordinates', () => {
+    const r = redactVenue(google());
+    expect(r.name).toBe(''); expect(r.address).toBe(''); expect(r.rating).toBe(0); expect(r.openHoursToday).toBe(''); expect(r.periods).toBeUndefined();
+    expect(r.placeId).toBe('ChIJabcdefghij'); expect(r.coords).toEqual(PLACES_DATABASE[0].coords);
+    expect(r.mapsUrl).toContain('query_place_id=ChIJabcdefghij');
+  });
+  it('leaves curated, hand-written venues untouched', () => {
+    const v = PLACES_DATABASE[0];
+    expect(redactVenue(v)).toBe(v);
+  });
+  it('redacts every block and the undo snapshot of a saved plan', () => {
+    const city = CITIES.find(c => c.id === 'jaipur') as CityData;
+    const calib = buildCalibration({ startTime: '09:30', endTime: '19:30' }, city, DATE);
+    const base: DayPlan = generatePlan(calib, { mobility: 'stairs_okay', maxStrideMinutes: 25, dietary: [], units: 'km', afterDarkMode: 'well_lit' }, { city, candidates: PLACES_DATABASE.filter(v => v.cityId === 'jaipur'), sunsetMinutes: sunsetFor(city, DATE) });
+    const plan: DayPlan = { ...base, blocks: base.blocks.map(b => ({ ...b, venue: google({ placeId: 'ChIJ' + b.blockId.slice(-9) }), fitLine: 'Open until 6:30 PM' })), previousSnapshot: { ...base, blocks: base.blocks.map(b => ({ ...b, venue: google() })), previousSnapshot: null } };
+    const out = redactPlan(plan);
+    expect(out.blocks.every(b => b.venue.name === '' && b.fitLine === '')).toBe(true);
+    expect(out.previousSnapshot!.blocks.every(b => b.venue.name === '')).toBe(true);
+    expect(JSON.stringify(out)).not.toContain('Hawa Mahal Rd');
+  });
+});

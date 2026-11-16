@@ -1,4 +1,4 @@
-# Build the PWA, then run the Node server (serves dist/ + /api) on Cloud Run's $PORT.
+# Build the PWA and a single bundled server file, then run plain Node on Cloud Run's $PORT (no TypeScript step at startup).
 FROM node:22-slim AS build
 WORKDIR /app
 COPY package*.json ./
@@ -9,11 +9,7 @@ RUN npm run build
 FROM node:22-slim
 WORKDIR /app
 ENV NODE_ENV=production
-COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
-COPY server ./server
-COPY src ./src
-COPY tsconfig.json tsconfig.server.json ./
+COPY --from=build /app/dist-server ./dist-server
 USER node
-CMD ["npx", "tsx", "server/index.ts"]
+CMD ["node", "dist-server/index.mjs"]

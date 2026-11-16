@@ -6,7 +6,7 @@ import { autocomplete, reverseGeocode } from './places';
 import { CITIES } from '../src/data/placesData';
 import { fetchWeather } from './weather';
 import { recordEvent } from './events';
-import { discover, placeDetails, placePhoto, DISCOVER_CATEGORIES, type DiscoverCategory } from './discover';
+import { discover, placeDetails, placePhoto, placePhotoRefs, placeSummary, DISCOVER_CATEGORIES, type DiscoverCategory } from './discover';
 
 async function limited(req: ApiRequest, bucket: string, limit: number): Promise<ApiResponse | null> {
   const r = await checkLimit(req.ip, bucket, limit);
@@ -25,7 +25,12 @@ export async function handle(req: ApiRequest): Promise<ApiResponse> {
     switch (`${req.method} ${req.path}`) {
       case 'GET /api/config':
         // Browser-safe values only. The Maps key is restricted to PlanB's domains by Google (HTTP referrers).
-        return json(200, { mapsKey: process.env.GOOGLE_MAPS_BROWSER_KEY || null });
+        return json(200, {
+          mapsKey: process.env.GOOGLE_MAPS_BROWSER_KEY || null,
+          contactEmail: process.env.CONTACT_EMAIL || null,
+          // false (default) = Places content is never stored on the device (Google Places policy); true only after counsel's OK
+          placesOfflineStorage: process.env.PLACES_OFFLINE_STORAGE === 'allow'
+        });
       case 'GET /api/health':
         return json(200, { ok: true, mode: { places: !!e.placesKey, llm: !!e.geminiKey && !e.deterministicOnly, deterministicOnly: e.deterministicOnly } });
 
@@ -79,12 +84,20 @@ export async function handle(req: ApiRequest): Promise<ApiResponse> {
         const d = await placeDetails(id).catch(() => null);
         return d ? json(200, { details: d }) : json(200, { details: null });
       }
+      case 'GET /api/places/photo-refs': {
+        const lim = await limited(req, 'photo-refs', 300); if (lim) return lim;
+        return json(200, { photos: await placePhotoRefs(req.query.get('id') || '').catch(() => []) }, { 'Cache-Control': 'private, no-store' });
+      }
+      case 'GET /api/places/summary': {
+        const lim = await limited(req, 'summary', 300); if (lim) return lim;
+        return json(200, { summary: await placeSummary(req.query.get('id') || '').catch(() => null) }, { 'Cache-Control': 'private, no-store' });
+      }
       case 'GET /api/places/photo': {
         const name = req.query.get('name') || '';
         const lim = await limited(req, 'photo', 300); if (lim) return lim;
         const img = await placePhoto(name, Number(req.query.get('w')) || 800);
         if (!img) return json(404, { error: 'no_photo' });
-        return { status: 200, body: Buffer.from(img.bytes), headers: { 'Content-Type': img.type, 'Cache-Control': 'public, max-age=86400' } };
+        return { status: 200, body: Buffer.from(img.bytes), headers: { 'Content-Type': img.type, 'Cache-Control': 'private, no-store' } };
       }
       case 'POST /api/events': {
         const lim = await limited(req, 'events', e.limitEvents); if (lim) return lim;
@@ -98,7 +111,7 @@ export async function handle(req: ApiRequest): Promise<ApiResponse> {
     if (err instanceof ApiError) return json(err.status, { error: err.code, message: err.message });
     const status = (err as { status?: number })?.status;
     if (status === 413 || status === 400) return json(status, { error: (err as Error).message });
-    logEvent('server_error', { message: (err as Error)?.message });
+    logEvent('server_error', { message: (err as Error)?.message, stack_trace: (err as Error)?.stack?.split('\n').slice(0, 12).join('\n') });
     return json(500, { error: 'server_error', message: 'Something went wrong on our side. Your saved plan is untouched.' });
   }
 }

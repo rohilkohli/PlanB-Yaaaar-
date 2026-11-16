@@ -15,10 +15,10 @@ interface Props {
 }
 
 const REASONS = [
-  { id: 'vibe', label: 'Not my vibe' },
-  { id: 'distance', label: 'Too far' },
-  { id: 'closed', label: 'It’s closed' },
-  { id: 'food', label: 'Food instead' }
+  { id: 'vibe', label: t('swap.vibe') },
+  { id: 'distance', label: t('swap.far') },
+  { id: 'closed', label: t('swap.closed') },
+  { id: 'food', label: t('swap.food') }
 ] as const;
 
 export const SwapBottomSheet: React.FC<Props> = ({ currentPlan, block, isOffline, onSwapConfirm, onClose }) => {

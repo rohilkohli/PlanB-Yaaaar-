@@ -1,6 +1,7 @@
 /** Node adapter: mounts the API on a plain http server or connect-style middleware (Vite dev). */
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { handle } from './handlers';
+import { securityHeaders } from './headers';
 import { clientIp, readBody, type ApiResponse } from './http';
 
 export async function nodeApi(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
@@ -17,6 +18,7 @@ export async function nodeApi(req: IncomingMessage, res: ServerResponse): Promis
   }
   res.statusCode = out.status;
   res.setHeader('Cache-Control', 'no-store');
+  for (const [k, v] of Object.entries(securityHeaders())) res.setHeader(k, v);
   for (const [k, v] of Object.entries(out.headers ?? {})) res.setHeader(k, v);
   if (out.body === undefined) { res.end(); return true; }
   if (Buffer.isBuffer(out.body)) { res.end(out.body); return true; }

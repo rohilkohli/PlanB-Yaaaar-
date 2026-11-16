@@ -8,7 +8,7 @@ export interface DiscoverPlace {
 }
 export interface PlaceDetails {
   id: string; name: string; address: string; rating: number; reviewCount: number; phone?: string; website?: string; mapsUrl?: string;
-  hours: string[]; openNow?: boolean; reviews: Array<{ rating: number; when: string; text: string; author: string }>;
+  hours: string[]; openNow?: boolean; reviews: Array<{ rating: number; when: string; text: string; author: string; authorUri?: string }>;
 }
 export interface WeatherNow { rainSoon: boolean; probability: number; tempC?: number; summary?: string; available: boolean }
 

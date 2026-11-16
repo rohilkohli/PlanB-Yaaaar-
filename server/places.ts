@@ -7,7 +7,7 @@ import { env } from './env';
 
 const FIELD_MASK = [
   'places.id', 'places.displayName', 'places.formattedAddress', 'places.location',
-  'places.regularOpeningHours', 'places.priceLevel', 'places.types', 'places.rating', 'places.userRatingCount'
+  'places.regularOpeningHours', 'places.currentOpeningHours', 'places.priceLevel', 'places.types', 'places.rating', 'places.userRatingCount'
 ].join(',');
 
 /**
@@ -31,6 +31,8 @@ interface GPlace {
   formattedAddress?: string;
   location?: { latitude: number; longitude: number };
   regularOpeningHours?: { periods?: Array<{ open: { day: number; hour: number; minute?: number }; close?: { day: number; hour: number; minute?: number } }> };
+  /** Next 7 days including special days/holidays; periods carry calendar dates. */
+  currentOpeningHours?: { periods?: Array<{ open: { date?: { year: number; month: number; day: number }; hour: number; minute?: number }; close?: { date?: { year: number; month: number; day: number }; hour: number; minute?: number } }> };
   priceLevel?: string;
   types?: string[];
   rating?: number;
@@ -99,10 +101,33 @@ export function periodsForDay(p: GPlace, weekday: number): Array<[number, number
   return out.sort((a, b) => a[0] - b[0]);
 }
 
-export function normalisePlace(p: GPlace, cityId: string, weekday: number, currency: '₹' | '$', fetchedAt: string): VerifiedVenue | null {
+const isoOf = (d?: { year: number; month: number; day: number }) => (d ? `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}` : '');
+
+/**
+ * Holiday-aware hours: for a date inside the next 7 days, Google's currentOpeningHours already reflects special days,
+ * so use it (no period that day = closed). Beyond that window only the regular weekly hours exist.
+ */
+export function currentPeriodsFor(p: GPlace, dateISO: string, nowISO = new Date().toISOString().slice(0, 10)): Array<[number, number]> | 'closed' | null {
+  const periods = p.currentOpeningHours?.periods;
+  if (!periods?.length) return null;
+  const last = new Date(`${nowISO}T12:00:00Z`); last.setUTCDate(last.getUTCDate() + 6);
+  if (dateISO < nowISO || dateISO > last.toISOString().slice(0, 10)) return null;
+  const out: Array<[number, number]> = [];
+  for (const per of periods) {
+    if (isoOf(per.open.date) !== dateISO || !per.close) continue;
+    const o = per.open.hour * 60 + (per.open.minute ?? 0);
+    const c = per.close.hour * 60 + (per.close.minute ?? 0);
+    out.push([o, isoOf(per.close.date) === dateISO ? c : c + 1440]);
+  }
+  return out.length ? out.sort((a, b) => a[0] - b[0]) : 'closed';
+}
+
+export function normalisePlace(p: GPlace, cityId: string, weekday: number, currency: '₹' | '$', fetchedAt: string, dateISO?: string): VerifiedVenue | null {
   if (!p.id || !p.displayName?.text || !p.location) return null;
   if ((p.types ?? []).some(t => EXCLUDED_TYPES.has(t)) || TRANSIT_NAME.test(p.displayName.text)) return null;
-  const periods = periodsForDay(p, weekday);
+  const current = dateISO ? currentPeriodsFor(p, dateISO) : null;
+  if (current === 'closed') return null; // special-day or holiday closure
+  const periods = current ?? periodsForDay(p, weekday);
   if (periods === null || (Array.isArray(periods) && periods.length === 0)) return null; // unknown/closed today → not verifiable
   const allDay = periods === 'all_day';
   const list: Array<[number, number]> = allDay ? [[0, 1439]] : periods;
@@ -135,7 +160,7 @@ export function normalisePlace(p: GPlace, cityId: string, weekday: number, curre
     isIndoor: ['museum', 'art_gallery', 'cafe', 'restaurant', 'bakery'].some(t => (p.types ?? []).includes(t)),
     hasPlugs: cat === 'cafe',
     noiseLevel: cat === 'walk' ? 'Open air' : cat === 'culture' ? 'Quiet' : 'Ambient',
-    whyItFits: `A well-rated ${LABEL[cat]} in ${(p.formattedAddress ?? '').split(',')[0] || 'the area'}, open for your whole visit.`,
+    whyItFits: `A well-rated ${LABEL[cat]} nearby, open for your whole visit.`,
     soloPerk: SOLO[cat],
     transitFromPrev: '',
     imageUrl: '',
@@ -180,7 +205,7 @@ export async function fetchCandidates(opts: {
         if (seen.has(p.id)) continue;
         seen.add(p.id);
         if ((p.rating ?? 0) < 4.2 || (p.userRatingCount ?? 0) < 150) continue; // rating- and volume-vetted
-        const v = normalisePlace(p, opts.cityId, weekday, opts.currency, fetchedAt);
+        const v = normalisePlace(p, opts.cityId, weekday, opts.currency, fetchedAt, opts.dateISO);
         if (v) out.push(v);
       }
     }

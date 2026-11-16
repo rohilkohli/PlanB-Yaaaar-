@@ -25,8 +25,10 @@ async function googleWeather(lat: number, lng: number, key: string): Promise<Wea
 
 export async function fetchWeather(lat: number, lng: number): Promise<WeatherNow> {
   const key = `${lat.toFixed(1)},${lng.toFixed(1)}`;
+  // Weather API has its own field-level caching rules; default off. WEATHER_CACHE_SEC>0 enables a short cache.
+  const ttlMs = Number(process.env.WEATHER_CACHE_SEC || 0) * 1000;
   const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < 10 * 60_000) return hit.value;
+  if (ttlMs > 0 && hit && Date.now() - hit.at < ttlMs) return hit.value;
   const key2 = process.env.GOOGLE_PLACES_API_KEY;
   if (key2) {
     const g = await googleWeather(lat, lng, key2);

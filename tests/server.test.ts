@@ -5,7 +5,7 @@ import { resetBudget } from '../server/budget';
 import { clientIp } from '../server/http';
 import { setLlmTransport } from '../server/llm';
 import { validateLlmOutput } from '../server/validate';
-import { normalisePlace, periodsForDay } from '../server/places';
+import { normalisePlace, periodsForDay, currentPeriodsFor } from '../server/places';
 import { normaliseDiscover } from '../server/discover';
 import { sanitizeEvent } from '../server/events';
 import { PLACES_DATABASE } from '../src/data/placesData';
@@ -266,15 +266,25 @@ describe('Places cost guards', () => {
   }));
   const stub = () => vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ places: live }) }) as any));
 
-  it('re-uses a recent result for the same area instead of paying again', async () => {
+  it('does NOT cache Places content by default (Google Places policy)', async () => {
     process.env.GOOGLE_PLACES_API_KEY = 'k';
     stub();
     await handle(req('POST', '/api/plan/generate', { calibration: CAL, now: NOW }));
-    const after1 = (globalThis.fetch as any).mock.calls.length;
+    expect((globalThis.fetch as any).mock.calls.length).toBe(3); // one fetch per query group
     await handle(req('POST', '/api/plan/generate', { calibration: CAL, now: NOW }, '2.2.2.2'));
-    expect(after1).toBe(3); // one fetch per query group
-    expect((globalThis.fetch as any).mock.calls.length).toBe(3); // second generate: cache hit
+    expect((globalThis.fetch as any).mock.calls.length).toBe(6); // fetched again: nothing was stored
     vi.unstubAllGlobals();
+  });
+
+  it('can re-use results only when explicitly enabled (PLACES_CACHE_TTL_SEC)', async () => {
+    process.env.GOOGLE_PLACES_API_KEY = 'k';
+    process.env.PLACES_CACHE_TTL_SEC = '600';
+    stub();
+    await handle(req('POST', '/api/plan/generate', { calibration: CAL, now: NOW }));
+    await handle(req('POST', '/api/plan/generate', { calibration: CAL, now: NOW }, '2.2.2.2'));
+    expect((globalThis.fetch as any).mock.calls.length).toBe(3);
+    vi.unstubAllGlobals();
+    delete process.env.PLACES_CACHE_TTL_SEC;
   });
 
   it('stops paying for Google once the global daily cap is reached and serves curated data', async () => {
@@ -329,5 +339,55 @@ describe('AI copy never makes safety claims', () => {
     expect(r.ok && r.hints[0].whyItFits).toBeUndefined();
     expect(r.ok && r.hints[1].soloTip).toBeUndefined();
     expect(r.ok && r.hints[1].whyItFits).toContain('calm courtyard');
+  });
+});
+
+describe('holiday-aware hours (currentOpeningHours)', () => {
+  const day = (iso: string) => { const [y, m, d] = iso.split('-').map(Number); return { year: y, month: m, day: d }; };
+  const base = { id: 'ChIJholiday00001', displayName: { text: 'Museum' }, formattedAddress: 'a', location: { latitude: 1, longitude: 1 }, types: ['museum'], rating: 4.6, userRatingCount: 900,
+    regularOpeningHours: { periods: [{ open: { day: 1, hour: 9 }, close: { day: 1, hour: 17 } }] } };
+  it('uses current hours inside the 7-day window and treats a missing day as closed', () => {
+    const p = { ...base, currentOpeningHours: { periods: [{ open: { date: day('2026-11-17'), hour: 10 }, close: { date: day('2026-11-17'), hour: 16 } }] } };
+    expect(currentPeriodsFor(p as any, '2026-11-17', '2026-11-16')).toEqual([[600, 960]]);
+    expect(currentPeriodsFor(p as any, '2026-11-18', '2026-11-16')).toBe('closed');
+    expect(normalisePlace(p as any, 'x', 2, '₹', 'n', '2026-11-18')).toBeNull(); // holiday/special closure
+  });
+  it('falls back to regular weekly hours outside the window', () => {
+    const p = { ...base, currentOpeningHours: { periods: [{ open: { date: day('2026-11-17'), hour: 10 }, close: { date: day('2026-11-17'), hour: 16 } }] } };
+    expect(currentPeriodsFor(p as any, '2026-12-30', '2026-11-16')).toBeNull();
+    expect(normalisePlace(p as any, 'x', 1, '₹', 'n', '2026-12-30')).not.toBeNull();
+  });
+});
+
+import { securityHeaders } from '../server/headers';
+describe('security headers', () => {
+  it('sets the standard protections and CSP in report-only mode by default', () => {
+    const h = securityHeaders();
+    expect(h['Strict-Transport-Security']).toContain('max-age=');
+    expect(h['X-Content-Type-Options']).toBe('nosniff');
+    expect(h['Permissions-Policy']).toContain('geolocation=(self)');
+    expect(h['Content-Security-Policy-Report-Only']).toContain("frame-ancestors 'none'");
+    expect(h['Content-Security-Policy']).toBeUndefined();
+  });
+  it('enforces CSP when CSP_MODE=enforce', () => {
+    process.env.CSP_MODE = 'enforce';
+    expect(securityHeaders()['Content-Security-Policy']).toContain("default-src 'self'");
+    delete process.env.CSP_MODE;
+  });
+});
+
+describe('shared rate limiting via Firestore', () => {
+  it('counts through Firestore when configured, and falls back to memory if it fails', async () => {
+    process.env.FIRESTORE_PROJECT = 'proj'; process.env.FIRESTORE_ACCESS_TOKEN = 't';
+    let n = 0; const urls: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => { urls.push(url); n += 1; return { ok: true, json: async () => ({ writeResults: [{}, { transformResults: [{ integerValue: String(n) }] }] }) } as any; }));
+    const { checkLimit } = await import('../server/ratelimit');
+    const a = await checkLimit('5.5.5.5', 'x', 2); const b = await checkLimit('5.5.5.5', 'x', 2); const c = await checkLimit('5.5.5.5', 'x', 2);
+    expect([a.allowed, b.allowed, c.allowed]).toEqual([true, true, false]);
+    expect(urls.every(u => u.includes('firestore.googleapis.com'))).toBe(true);
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('down'); }));
+    const d = await checkLimit('6.6.6.6', 'y', 1); const e = await checkLimit('6.6.6.6', 'y', 1);
+    expect([d.allowed, e.allowed]).toEqual([true, false]); // memory fallback keeps limiting
+    vi.unstubAllGlobals(); delete process.env.FIRESTORE_PROJECT; delete process.env.FIRESTORE_ACCESS_TOKEN;
   });
 });

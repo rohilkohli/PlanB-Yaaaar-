@@ -44,7 +44,7 @@ const step = (m: string) => console.log(`  ✓ ${m}`);
 async function main() {
   let server: ReturnType<typeof spawn> | null = null;
   if (!process.env.BASE_URL) {
-    server = spawn('npx', ['tsx', 'server/index.ts'], { env: { ...process.env, PORT: String(PORT), ALLOW_TEST_CLOCK: '1', GOOGLE_PLACES_API_KEY: '', ANTHROPIC_API_KEY: '', NODE_ENV: 'production' }, stdio: 'ignore' });
+    server = spawn('node', ['dist-server/index.mjs'], { env: { ...process.env, PORT: String(PORT), ALLOW_TEST_CLOCK: '1', GOOGLE_PLACES_API_KEY: '', GEMINI_API_KEY: '', NODE_ENV: 'production' }, stdio: 'ignore' });
   }
   try {
     await waitForServer();

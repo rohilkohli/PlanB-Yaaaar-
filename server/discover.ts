@@ -9,6 +9,9 @@ import { env } from './env';
 import { cached, reserveCalls } from './budget';
 import { EXCLUDED_TYPES, TRANSIT_NAME } from './places';
 
+/** Names of places to stay at, which agencies-search results sometimes include. */
+export const LODGING_NAME = /\b(hotel|resort|inn|lodge|hostel|dorm|guest ?house|stay|suites?)\b/i;
+
 export type DiscoverCategory = 'best' | 'cafes' | 'hostels' | 'agencies' | 'food';
 export const DISCOVER_CATEGORIES: DiscoverCategory[] = ['best', 'cafes', 'hostels', 'agencies', 'food'];
 
@@ -69,6 +72,8 @@ export function normaliseDiscover(p: any, category: DiscoverCategory, center: Co
   if (!p?.id || !p.displayName?.text || !p.location) return null;
   // Hostels are the point of that tab, so lodging types are only excluded elsewhere.
   if (category !== 'hostels' && (p.types ?? []).some((t: string) => EXCLUDED_TYPES.has(t))) return null;
+  // Agencies: must actually be a travel agency, and never a hotel or hostel that happens to sell tours.
+  if (category === 'agencies' && (!(p.types ?? []).includes('travel_agency') || LODGING_NAME.test(p.displayName.text))) return null;
   if (TRANSIT_NAME.test(p.displayName.text)) return null;
   const coords = { lat: p.location.latitude, lng: p.location.longitude };
   const rating = Number(p.rating ?? 0);

@@ -6,6 +6,7 @@ import { clientIp } from '../server/http';
 import { setLlmClientFactory } from '../server/llm';
 import { validateLlmOutput } from '../server/validate';
 import { normalisePlace, periodsForDay } from '../server/places';
+import { normaliseDiscover } from '../server/discover';
 import { sanitizeEvent } from '../server/events';
 import { PLACES_DATABASE } from '../src/data/placesData';
 import type { ApiRequest } from '../server/http';
@@ -193,6 +194,22 @@ describe('Places type exclusions (found by the live eval)', () => {
   });
   it('keeps normal sights', () => {
     expect(normalisePlace({ ...base, id: 'ChIJyyyyyyyyyy', types: ['tourist_attraction', 'museum'] } as any, 'goa', 1, '₹', 'x')).not.toBeNull();
+  });
+});
+
+describe('agencies filter and lodging-name guard', () => {
+  const center = { lat: 26.9, lng: 75.8 };
+  const raw = (name: string, types: string[]) => ({ id: 'ChIJagency' + name.length, displayName: { text: name }, formattedAddress: 'x', location: { latitude: 26.9, longitude: 75.8 }, rating: 4.5, userRatingCount: 300, types });
+  it('keeps real travel agencies', () => {
+    expect(normaliseDiscover(raw('Milan Travels', ['travel_agency', 'point_of_interest']), 'agencies', center)).not.toBeNull();
+  });
+  it('drops hotels and hostels that are listed as agencies', () => {
+    expect(normaliseDiscover(raw('Hotel Pearl Palace', ['travel_agency']), 'agencies', center)).toBeNull();
+    expect(normaliseDiscover(raw('Zostel Jaipur Guest House', ['travel_agency']), 'agencies', center)).toBeNull();
+    expect(normaliseDiscover(raw('Ginger Jaipur', ['lodging', 'travel_agency']), 'agencies', center)).toBeNull();
+  });
+  it('drops non-agency results entirely from the agencies tab', () => {
+    expect(normaliseDiscover(raw('Blue Lassi Shop', ['restaurant']), 'agencies', center)).toBeNull();
   });
 });
 

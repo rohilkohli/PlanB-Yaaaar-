@@ -123,7 +123,7 @@ export function scoreVenue(v: VerifiedVenue, o: ScoreOpts): number {
   }
   if (o.calib.energy === 'active' && (v.category === 'walk' || v.category === 'viewpoint')) s += 2;
 
-  // Well-lit evening: favour busy, popular corridors as a proxy for foot traffic.
+  // Evening "main streets" preference: favour busy, popular places. This is a popularity proxy, NOT a safety measure.
   if (o.calib.afterDark === 'well_lit' && o.slot === 'evening') {
     if (v.reviewsCount >= 5000 || noise === 'lively' || v.category === 'market') s += 2;
     if (!v.isIndoor && v.reviewsCount < 1000) s -= 1;
@@ -190,7 +190,7 @@ function fitLine(v: VerifiedVenue, calib: Pick<CalibrationData, 'social' | 'ener
   else if (calib.social === 'social' && noise === 'lively') bits.push('Lively crowd');
   else if (calib.energy === 'gentle' && v.isIndoor) bits.push('Easy, indoors');
   else if (calib.energy === 'active' && (v.category === 'walk' || v.category === 'viewpoint')) bits.push('Room to stretch your legs');
-  else if (calib.afterDark === 'well_lit' && slot === 'evening') bits.push('Busy, well-lit area');
+  else if (calib.afterDark === 'well_lit' && slot === 'evening') bits.push('Busy streets after dark');
   else bits.push(v.isIndoor ? 'Indoors' : 'Outdoors');
   const w = openWindow(v);
   const allDay = w.open === 0 && w.close >= 1439;

@@ -97,7 +97,7 @@ export const TermsPage: React.FC = () => (
     <P>A planning aid. It suggests a paced day and reshapes it when your day changes. It is not a guide, a safety service or a booking service.</P>
 
     <H>Your judgment comes first</H>
-    <P>Street conditions, opening hours, weather and safety change constantly. Suggestions, “well-lit” and daylight cut-offs, and opening hours may be wrong or out of date. Check a venue is open and the area feels comfortable before you go, and change plans whenever something feels off. Nothing in the app is advice about your personal safety. In an emergency, contact local emergency services.</P>
+    <P>Street conditions, opening hours, weather and safety change constantly. Suggestions, evening-area choices and daylight cut-offs, and opening hours may be wrong or out of date. Check a venue is open and the area feels comfortable before you go, and change plans whenever something feels off. Nothing in the app is advice about your personal safety. In an emergency, contact local emergency services.</P>
 
     <H>Information from others</H>
     <P>Place details, ratings, reviews and weather come from third parties (see <DataSourcesLink className="font-semibold text-spruce underline underline-offset-2" />). We do not verify them and are not responsible for them. Links to Google Maps and other sites are governed by those sites’ terms.</P>

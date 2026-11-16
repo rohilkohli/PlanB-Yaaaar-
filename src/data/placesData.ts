@@ -372,7 +372,7 @@ const BASE_PLACES: VerifiedVenue[] = [
     hasPlugs: false,
     noiseLevel: "Gentle ocean waves & dusk chatter",
     whyItFits: "Wide tree-lined beach promenade where the Mandovi River meets the Arabian Sea, bathed in golden evening light.",
-    soloPerk: "Clean, well-lit paved walking track popular with evening solo joggers and beach walkers.",
+    soloPerk: "Clean, paved walking track popular with evening solo joggers and beach walkers.",
     transitFromPrev: "10 min scenic auto drive along the riverfront",
     imageUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
     mapsUrl: "https://www.google.com/maps/search/?api=1&query=Miramar+Beach+Panaji",

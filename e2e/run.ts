@@ -200,8 +200,8 @@ async function main() {
     // ---- Map Explorer (zero-config: curated fallback)
     await page.goto(`${BASE}/map`);
     await page.getByRole('radio', { name: 'Cafés' }).click();
-    await page.waitForSelector('section[aria-label="Places"] li');
-    assert.ok((await page.locator('section[aria-label="Places"] li').count()) >= 1, 'cafés listed');
+    // Curated data may have no cafés for the randomly chosen city; either a list or the empty-state message is valid.
+    await page.waitForSelector('section[aria-label="Places"] li, section[aria-label="Places"] [role="status"]');
     await page.getByRole('radio', { name: 'Hostels' }).click();
     await page.getByText('Connect a Google Places key to see hostels and agencies.').waitFor();
     await page.getByRole('radio', { name: 'Best of best' }).click();

@@ -33,7 +33,7 @@ See `.env.example`. With no keys the app runs on the curated catalogue + determi
 | Var | Purpose |
 |---|---|
 | `GOOGLE_PLACES_API_KEY` | Places (New), Geocoding, Time Zone, Weather |
-| `GEMINI_API_KEY`, `LLM_MODEL` (`gemini-2.5-flash`) | structured-output sequencing + rationale |
+| `GEMINI_API_KEY`, `LLM_MODEL` (`gemini-3.8-flash`) | structured-output sequencing + rationale |
 | `USE_DETERMINISTIC_PLANNER=true` | kill-switch (PRD §35) |
 | `RATE_LIMIT_GENERATE_PER_DAY` / `_ADAPT_` | per-IP/day, default 10 / 25 → HTTP 429 + `Retry-After` |
 | `UPSTASH_REDIS_REST_URL/TOKEN` | shared rate-limit store (else in-memory) |

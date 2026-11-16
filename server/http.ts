@@ -15,10 +15,17 @@ export interface ApiResponse {
 
 export const json = (status: number, body: unknown, headers: Record<string, string> = {}): ApiResponse => ({ status, body, headers });
 
+/**
+ * The visitor IP used for rate limits. `X-Forwarded-For` is client-controlled, so only the entry appended by
+ * OUR trusted proxy is believed: on Cloud Run (K_SERVICE set) that is the last entry. Elsewhere XFF is ignored
+ * unless TRUSTED_PROXY_HOPS is set (number of proxies in front of us).
+ */
 export function clientIp(req: IncomingMessage): string {
-  const xf = req.headers['x-forwarded-for'];
-  const first = (Array.isArray(xf) ? xf[0] : xf)?.split(',')[0]?.trim();
-  return first || req.socket.remoteAddress || 'unknown';
+  const hops = process.env.TRUSTED_PROXY_HOPS !== undefined ? Number(process.env.TRUSTED_PROXY_HOPS) : process.env.K_SERVICE ? 1 : 0;
+  const raw = req.headers['x-forwarded-for'];
+  const parts = (Array.isArray(raw) ? raw.join(',') : raw ?? '').split(',').map(x => x.trim()).filter(Boolean);
+  if (hops > 0 && parts.length >= hops) return parts[parts.length - hops];
+  return req.socket.remoteAddress || 'unknown';
 }
 
 export async function readBody(req: IncomingMessage, maxBytes = 200_000): Promise<unknown> {

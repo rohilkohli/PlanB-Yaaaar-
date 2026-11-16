@@ -3,7 +3,7 @@ import { AlertTriangle, ArrowRight, Clock, CloudOff } from 'lucide-react';
 import type { DayPlan, PlanBlock, VerifiedVenue } from '../types/itinerary';
 import { openUntilLabel } from '../core/hours';
 import { swapRemote } from '../services/planService';
-import { BottomSheet, PrimaryButton } from './ui';
+import { BottomSheet, PrimaryButton, VenueImage } from './ui';
 
 interface Props {
   currentPlan: DayPlan;
@@ -75,11 +75,9 @@ export const SwapBottomSheet: React.FC<Props> = ({ currentPlan, block, isOffline
 
         {alts?.map(alt => (
           <article key={alt.placeId} className="bg-white/75 backdrop-blur-xl rounded-2xl p-3.5 border border-white/80 flex flex-col gap-2.5 shadow-glass-card">
-            {alt.imageUrl && (
-              <div className="relative w-full h-28 rounded-xl overflow-hidden border border-white/60">
-                <img src={alt.imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
-              </div>
-            )}
+            <div className="relative w-full h-28 rounded-xl overflow-hidden border border-white/60">
+              <VenueImage src={alt.imageUrl} className="w-full h-full object-cover" />
+            </div>
             <div className="min-w-0">
               <p className="text-[11px] uppercase font-bold text-olive-slate tracking-wide">{alt.category} · {alt.neighborhood}</p>
               <h3 className="font-bold text-sm text-obsidian">{alt.name}</h3>

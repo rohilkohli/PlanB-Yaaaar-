@@ -4,8 +4,9 @@ import { CITIES } from '../data/placesData';
 import type { CalibrationData, TravelerPreferences } from '../types/itinerary';
 import type { CalibrationInput } from '../core/calibration';
 import { nearestCity } from '../core/cities';
-import { minutesToHHMM } from '../core/time';
-import { testClockMinutes } from '../core/clock';
+import { priceRank } from '../core/planner';
+import { addDays, minutesToHHMM } from '../core/time';
+import { nowIn, testClockMinutes } from '../core/clock';
 import { sunsetLocalMinutes } from '../core/sunset';
 import { fetchSuggestions } from '../services/planService';
 import { track } from '../services/analytics';
@@ -19,12 +20,16 @@ interface Props {
   onBuildPlan: (input: CalibrationInput, meta: BuildMeta) => void;
   serverError?: string | null;
   busy?: boolean;
+  /** Carry the previous plan's answers over (used by "Plan tomorrow"). */
+  prefill?: { cityId?: string; cityName: string; energy: CalibrationData['energy']; budget: string; afterDark: CalibrationData['afterDark']; social: CalibrationData['social'] } | null;
 }
 
 /** Smart defaults from the device clock (PRD FR-002: pre-fill so one tap builds a day). */
-function defaultWindow() {
+function defaultWindow(timeZone?: string, tomorrow = false) {
+  if (tomorrow) return { start: '09:30', end: '19:30' };
   const d = new Date();
-  const mins = testClockMinutes() ?? d.getHours() * 60 + d.getMinutes();
+  // Use the DESTINATION's local time when known (planning Jaipur from London must not use London's clock).
+  const mins = timeZone ? nowIn(timeZone).minutes : testClockMinutes() ?? d.getHours() * 60 + d.getMinutes();
   if (mins >= 6 * 60 && mins <= 21 * 60 && mins > 9 * 60 + 30) {
     const start = Math.ceil((mins + 15) / 30) * 30;
     return { start: minutesToHHMM(start), end: start >= 17 * 60 ? '22:00' : '19:30' };
@@ -32,30 +37,39 @@ function defaultWindow() {
   return { start: '09:30', end: '19:30' };
 }
 
-export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails, onBuildPlan, serverError, busy }) => {
+export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails, onBuildPlan, serverError, busy, prefill }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [query, setQuery] = useState('');
-  const [cityId, setCityId] = useState<string | undefined>(undefined);
+  const [query, setQuery] = useState(prefill?.cityName ?? '');
+  const [cityId, setCityId] = useState<string | undefined>(prefill?.cityId && CITIES.some(c => c.id === prefill.cityId) ? prefill.cityId : undefined);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | undefined>();
   const [usedGps, setUsedGps] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsNotice, setGpsNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<Array<{ text: string; cityId?: string }>>([]);
-  const defaults = useRef(defaultWindow());
+  const [dayOffset, setDayOffset] = useState<0 | 1>(() => (new URLSearchParams(window.location.search).has('tomorrow') ? 1 : 0));
+  const defaults = useRef(defaultWindow(undefined, dayOffset === 1));
   const [startTime, setStartTime] = useState(defaults.current.start);
   const [endTime, setEndTime] = useState(defaults.current.end);
-  const [energy, setEnergy] = useState<CalibrationData['energy']>(() => (Math.floor((testClockMinutes() ?? new Date().getHours() * 60) / 60) >= 12 ? 'gentle' : 'balanced'));
-  const [budget, setBudget] = useState<'₹' | '₹₹' | '₹₹₹'>('₹₹');
-  const [afterDark, setAfterDark] = useState<CalibrationData['afterDark']>(preferences.afterDarkMode || 'well_lit');
-  const [social, setSocial] = useState<CalibrationData['social']>('ambient');
+  const timesTouched = useRef(false);
+  const [energy, setEnergy] = useState<CalibrationData['energy']>(() => prefill?.energy ?? (Math.floor((testClockMinutes() ?? new Date().getHours() * 60) / 60) >= 12 ? 'gentle' : 'balanced'));
+  const [budget, setBudget] = useState<'₹' | '₹₹' | '₹₹₹'>(() => (prefill ? (['₹', '₹₹', '₹₹₹'][priceRank(prefill.budget) - 1] as '₹' | '₹₹' | '₹₹₹') : '₹₹'));
+  const [afterDark, setAfterDark] = useState<CalibrationData['afterDark']>(prefill?.afterDark ?? (preferences.afterDarkMode || 'well_lit'));
+  const [social, setSocial] = useState<CalibrationData['social']>(prefill?.social ?? 'ambient');
   const inputRef = useRef<HTMLInputElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const city = CITIES.find(c => c.id === cityId) ?? (coords ? nearestCity(coords, 40) : null) ?? undefined;
   const sunset = city
-    ? sunsetLocalMinutes(city.coords.lat, city.coords.lng, new Date().toISOString().slice(0, 10), city.timezone)
+    ? sunsetLocalMinutes(city.coords.lat, city.coords.lng, addDays(nowIn(city.timezone).date, dayOffset), city.timezone)
     : null;
+
+  // Re-derive the default window from the destination's clock until the traveler edits it.
+  useEffect(() => {
+    if (timesTouched.current) return;
+    const w = defaultWindow(city?.timezone, dayOffset === 1);
+    setStartTime(w.start); setEndTime(w.end);
+  }, [city?.timezone, dayOffset]);
 
   const firstRender = useRef(true);
   useEffect(() => {
@@ -105,7 +119,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
   };
 
   const buildInput = (): CalibrationInput => ({
-    cityId, query: query.trim() || undefined, coords, startTime, endTime, energy, budget, afterDark, social,
+    cityId, query: query.trim() || undefined, coords, startTime, endTime, dayOffset, energy, budget, afterDark, social,
     locationLabel: city?.name ?? (query.trim() || undefined)
   });
 
@@ -233,6 +247,15 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
 
           <fieldset className="mb-4">
             <legend className="text-xs font-bold text-obsidian mb-2">Your day</legend>
+            <div className="mb-2.5">
+              <RadioGroup
+                label="Which day"
+                variant="segmented"
+                value={String(dayOffset) as '0' | '1'}
+                onChange={v => { touched(); setDayOffset(v === '1' ? 1 : 0); }}
+                options={[{ value: '0', label: 'Today' }, { value: '1', label: 'Tomorrow' }]}
+              />
+            </div>
             <div className="grid grid-cols-2 gap-2.5">
               {[
                 { id: 'start', label: 'Start', value: startTime, set: setStartTime },
@@ -244,7 +267,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
                     id={`t-${f.id}`}
                     type="time"
                     value={f.value}
-                    onChange={e => { touched(); f.set(e.target.value || f.value); }}
+                    onChange={e => { touched(); timesTouched.current = true; f.set(e.target.value || f.value); }}
                     className="mt-1 w-full min-h-[48px] px-3 rounded-2xl bg-white/80 border border-white/80 text-sm font-semibold text-obsidian focus:outline-none focus:ring-2 focus:ring-chartreuse shadow-glass-card"
                   />
                 </label>

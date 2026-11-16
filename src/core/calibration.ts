@@ -8,6 +8,8 @@ export interface CalibrationInput {
   query?: string;
   coords?: { lat: number; lng: number };
   date?: string;
+  /** 0 = today, 1 = tomorrow (relative to the destination's local date). */
+  dayOffset?: 0 | 1;
   startTime?: string;
   endTime?: string;
   energy?: CalibrationData['energy'];

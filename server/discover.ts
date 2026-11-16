@@ -6,6 +6,7 @@ import { PLACES_DATABASE } from '../src/data/placesData';
 import { haversineKm } from '../src/core/geo';
 import type { Coordinates } from '../src/types/itinerary';
 import { env } from './env';
+import { cached, reserveCalls } from './budget';
 
 export type DiscoverCategory = 'best' | 'cafes' | 'hostels' | 'agencies' | 'food';
 export const DISCOVER_CATEGORIES: DiscoverCategory[] = ['best', 'cafes', 'hostels', 'agencies', 'food'];
@@ -108,12 +109,15 @@ export async function discover(opts: { center: Coordinates; category: DiscoverCa
   }
   try {
     const radius = Math.min(opts.radiusM ?? 5000, 20000);
-    const j = await post('https://places.googleapis.com/v1/places:searchNearby', LIST_MASK, {
-      includedTypes: TYPES[opts.category],
-      maxResultCount: 20,
-      rankPreference: 'POPULARITY',
-      locationRestriction: { circle: { center: { latitude: opts.center.lat, longitude: opts.center.lng }, radius } }
-    }, 3500);
+    const j = await cached(`disc:${opts.category}:${opts.center.lat.toFixed(2)},${opts.center.lng.toFixed(2)}:${radius}`, async () => {
+      if (!reserveCalls(1)) throw new Error('daily_cap');
+      return post('https://places.googleapis.com/v1/places:searchNearby', LIST_MASK, {
+        includedTypes: TYPES[opts.category],
+        maxResultCount: 20,
+        rankPreference: 'POPULARITY',
+        locationRestriction: { circle: { center: { latitude: opts.center.lat, longitude: opts.center.lng }, radius } }
+      }, 3500);
+    });
     const places = ((j.places ?? []) as any[])
       .map(p => normaliseDiscover(p, opts.category, opts.center))
       .filter((p): p is DiscoverPlace => !!p && p.rating >= (opts.category === 'agencies' ? 3.5 : 4.0))
@@ -132,12 +136,15 @@ export interface PlaceDetails {
 
 export async function placeDetails(id: string): Promise<PlaceDetails | null> {
   if (!env().placesKey || !/^[A-Za-z0-9_-]{10,200}$/.test(id)) return null;
-  const res = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(id)}`, {
-    headers: { 'X-Goog-Api-Key': env().placesKey!, 'X-Goog-FieldMask': DETAIL_MASK },
-    signal: AbortSignal.timeout(3500)
+  const p: any = await cached(`det:${id}`, async () => {
+    if (!reserveCalls(1)) throw new Error('daily_cap');
+    const res = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(id)}`, {
+      headers: { 'X-Goog-Api-Key': env().placesKey!, 'X-Goog-FieldMask': DETAIL_MASK },
+      signal: AbortSignal.timeout(3500)
+    });
+    if (!res.ok) throw new Error(`google_${res.status}`);
+    return res.json();
   });
-  if (!res.ok) return null;
-  const p: any = await res.json();
   return {
     id: p.id, name: p.displayName?.text ?? '', address: p.formattedAddress ?? '', rating: p.rating ?? 0, reviewCount: p.userRatingCount ?? 0,
     phone: p.nationalPhoneNumber, website: p.websiteUri, mapsUrl: p.googleMapsUri,

@@ -86,6 +86,11 @@ async function main() {
     const fitLines = await page.locator('article >> text=/Open (until|all day)/').count();
     assert.ok(fitLines >= original.length, 'every block shows open hours + source');
 
+    // no broken-image icons: failed/absent photos fall back to a placeholder
+    await page.waitForTimeout(1200);
+    const broken = await page.$$eval('article img', imgs => imgs.filter(i => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth === 0).length);
+    assert.equal(broken, 0, 'no broken <img> on plan cards');
+
     // ---- Complete block 1
     await page.getByRole('button', { name: `Mark done, ${original[0]}` }).click();
     await page.getByRole('button', { name: `Done, ${original[0]}` }).waitFor();
@@ -158,6 +163,24 @@ async function main() {
     step(`Airplane-mode reload renders the cached plan (${loadMs} ms incl. navigation); Adapt disabled with PRD copy`);
     await page.keyboard.press('Escape');
     await context.setOffline(false);
+
+    // ---- Late evening + "finish before dark" → "Plan tomorrow" really plans tomorrow
+    await page.evaluate(() => localStorage.setItem('planb_test_clock', '20:00'));
+    await page.goto(`${BASE}/?new=1`);
+    await page.getByRole('radio', { name: /Jaipur/ }).click();
+    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('radio', { name: /Finish before dark/ }).click();
+    await page.getByRole('button', { name: 'Build my day' }).click();
+    await page.getByText('It’s a little late for a daylight plan').waitFor();
+    await page.getByRole('button', { name: 'Plan tomorrow' }).click();
+    await page.getByRole('radio', { name: 'Tomorrow' }).waitFor();
+    assert.equal(await page.getByRole('radio', { name: 'Tomorrow' }).getAttribute('aria-checked'), 'true');
+    await page.getByRole('button', { name: /Skip — build with defaults/ }).click();
+    await page.getByText(/Plan for tomorrow/).waitFor();
+    assert.ok((await names(page)).length >= 3, 'tomorrow gets a full 3–4 block plan');
+    step('late evening → "Plan tomorrow" builds a full plan for tomorrow');
+    await page.evaluate(() => localStorage.setItem('planb_test_clock', '14:00'));
 
     // ---- Map Explorer (zero-config: curated fallback)
     await page.goto(`${BASE}/map`);

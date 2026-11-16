@@ -17,6 +17,8 @@ import {
 import { AlertCircle, Copy, Moon, PartyPopper, Plus, RotateCw, ShieldCheck, CalendarPlus } from 'lucide-react';
 import { DayPlan, PlanBlock } from '../types/itinerary';
 import { haversineKm } from '../core/geo';
+import { nowIn } from '../core/clock';
+import { VenueImage } from './ui';
 
 interface ActiveCanvasViewProps {
   plan: DayPlan;
@@ -25,7 +27,7 @@ interface ActiveCanvasViewProps {
   onOpenSwap: (block: PlanBlock) => void;
   onOpenGuardrails: () => void;
   onToggleBlockDone: (blockId: string) => void;
-  onNewDay: () => void;
+  onNewDay: (tomorrow?: boolean) => void;
   onMapsClick: (block: PlanBlock) => void;
   onAddBonus: () => void;
   onRetryLive: () => void;
@@ -112,7 +114,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
 
           <button
             type="button"
-            onClick={onNewDay}
+            onClick={() => onNewDay()}
             className="min-h-[44px] px-3.5 rounded-full bg-white/75 backdrop-blur-xl border border-white/80 text-xs font-bold text-obsidian hover:bg-white/90 active:scale-95 transition-all shadow-sm"
           >
             New day
@@ -175,8 +177,11 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           </span>
         </div>
         <p className="text-xs text-olive-slate">
-          {plan.city.country} · {plan.city.tagline}
+          {plan.city.country}{plan.city.tagline ? ` · ${plan.city.tagline}` : ''}
         </p>
+        {plan.calibration.date > nowIn(plan.city.timezone).date && (
+          <p className="text-xs font-bold text-spruce">Plan for tomorrow · {new Date(`${plan.calibration.date}T12:00:00Z`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })}</p>
+        )}
       </section>
 
       {/* Master Day Summary Glass Module (From Google Stitch Specification) */}
@@ -355,10 +360,8 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                       </div>
 
                       <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-white/60 border border-white/70 shadow-xs shrink-0">
-                        <img
+                        <VenueImage
                           src={block.venue.imageUrl}
-                          alt=""
-                          loading="lazy"
                           className={`w-full h-full object-cover ${isDone ? 'grayscale-[60%]' : ''}`}
                         />
                         <span className="absolute bottom-1 right-1 bg-obsidian/85 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-sm shadow-xs">
@@ -443,7 +446,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
               <div>
                 <h4 className="font-bold text-sm text-obsidian">It’s a little late for a daylight plan</h4>
                 <p className="text-xs text-olive-slate mt-0.5">Rest up. You could set up tomorrow morning instead.</p>
-                <button type="button" onClick={onNewDay} className="mt-2 min-h-[44px] px-4 rounded-full bg-chartreuse text-obsidian text-xs font-bold flex items-center gap-1.5">
+                <button type="button" onClick={() => onNewDay(true)} className="mt-2 min-h-[44px] px-4 rounded-full bg-chartreuse text-obsidian text-xs font-bold flex items-center gap-1.5">
                   <CalendarPlus className="w-4 h-4" aria-hidden="true" /> Plan tomorrow
                 </button>
               </div>
@@ -460,7 +463,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                   <button type="button" disabled={busy || isOffline} onClick={onAddBonus} className="min-h-[44px] px-4 rounded-full bg-chartreuse text-obsidian text-xs font-bold flex items-center gap-1.5 disabled:opacity-50">
                     <Plus className="w-4 h-4" aria-hidden="true" /> One bonus stop
                   </button>
-                  <button type="button" onClick={onNewDay} className="min-h-[44px] px-4 rounded-full bg-white border border-card-border text-obsidian text-xs font-bold flex items-center gap-1.5">
+                  <button type="button" onClick={() => onNewDay(true)} className="min-h-[44px] px-4 rounded-full bg-white border border-card-border text-obsidian text-xs font-bold flex items-center gap-1.5">
                     <CalendarPlus className="w-4 h-4" aria-hidden="true" /> Tomorrow
                   </button>
                 </div>

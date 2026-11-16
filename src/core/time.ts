@@ -56,3 +56,10 @@ export function localNow(timeZone: string, at: Date = new Date()): { minutes: nu
     date: local.toISOString().slice(0, 10)
   };
 }
+
+/** ISO date plus N days (calendar arithmetic in UTC, no timezone drift). */
+export function addDays(dateISO: string, n: number): string {
+  const d = new Date(`${dateISO}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}

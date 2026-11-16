@@ -9,6 +9,7 @@ import {
   adaptPlan, addBonusStop, generatePlan, swapAlternatives, type PlanContext
 } from '../core/planner';
 import { clockOverride, nowIn } from '../core/clock';
+import { addDays } from '../core/time';
 import type { CityData, Coordinates, DayPlan, TravelerPreferences, VerifiedVenue } from '../types/itinerary';
 import { storage } from './storage';
 
@@ -67,7 +68,7 @@ function localContext(city: CityData, dateISO: string, extra: Partial<PlanContex
 export function generateLocal(input: CalibrationInput, prefs: TravelerPreferences): DayPlan {
   const { city, anchor, label } = localCity(input);
   const now = nowIn(city.timezone);
-  const date = input.date || now.date;
+  const date = input.date || addDays(now.date, input.dayOffset === 1 ? 1 : 0);
   const calib = buildCalibration({ ...input, coords: anchor, locationLabel: label }, city, date);
   calib.afterDark = input.afterDark ?? prefs.afterDarkMode;
   const plan = generatePlan(calib, prefs, localContext(city, date));

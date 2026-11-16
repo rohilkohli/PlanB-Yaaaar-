@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, MapPin, X } from 'lucide-react';
 
 /* ------------------------------------------------------------------ focus trap */
 
@@ -191,3 +191,16 @@ export const GlassButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>
     {children}
   </button>
 );
+
+/** Venue photo with a graceful placeholder (live Places venues have no photo; hotlinked ones can fail). */
+export const VenueImage: React.FC<{ src?: string; className?: string }> = ({ src, className = '' }) => {
+  const [failed, setFailed] = React.useState(false);
+  if (!src || failed) {
+    return (
+      <div aria-hidden="true" className={`flex items-center justify-center bg-gradient-to-br from-recessed to-recessed-dark text-spruce/60 ${className}`}>
+        <MapPin className="w-6 h-6" />
+      </div>
+    );
+  }
+  return <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} className={className} />;
+};

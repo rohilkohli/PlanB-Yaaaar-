@@ -245,6 +245,7 @@ export const App: React.FC = () => {
             onBuildPlan={handleBuildPlan}
             serverError={calError}
             busy={!!generating}
+            prefill={params.has('tomorrow') && plan ? { cityId: plan.city.id, cityName: plan.city.name, energy: plan.calibration.energy, budget: plan.calibration.budget, afterDark: plan.calibration.afterDark, social: plan.calibration.social } : null}
           />
         )}
 
@@ -260,7 +261,7 @@ export const App: React.FC = () => {
             onOpenSwap={blk => navigate(`/today#swap-${blk.blockId}`)}
             onOpenGuardrails={() => navigate('/preferences')}
             onToggleBlockDone={handleToggleDone}
-            onNewDay={() => navigate('/?new=1')}
+            onNewDay={tomorrow => navigate(tomorrow ? '/?new=1&tomorrow=1' : '/?new=1')}
             onMapsClick={b => track('block_maps_clicked', { block_sequence: b.sequence, category: b.venue.category, is_adapted: !!b.isAdapted })}
             onAddBonus={handleBonus}
             onRetryLive={handleRetryLive}

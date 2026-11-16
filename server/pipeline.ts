@@ -4,14 +4,15 @@
  * Stage 2: LLM sequencing + rationale (optional)  →  validator  →  deterministic scheduler
  * Any failure at stage 2 falls back to the deterministic planner (PRD §21).
  */
-import { PLACES_DATABASE } from '../src/data/placesData';
+import { CITIES, PLACES_DATABASE } from '../src/data/placesData';
 import { matchCity, nearestCity } from '../src/core/cities';
 import { buildCalibration, sunsetFor, type CalibrationInput } from '../src/core/calibration';
 import {
   adaptPlan, addBonusStop, generatePlan, planWindow, rankPool, swapAlternatives,
   targetBlockCount, type PlanContext
 } from '../src/core/planner';
-import { localNow, timeStringToMinutes } from '../src/core/time';
+import { addDays, localNow, timeStringToMinutes } from '../src/core/time';
+import { cached, reserveCalls } from './budget';
 import { truncateCoords } from '../src/core/geo';
 import type { CityData, Coordinates, DayPlan, TravelerPreferences, VerifiedVenue } from '../src/types/itinerary';
 import { env } from './env';
@@ -63,6 +64,7 @@ export function sanitizeCalibration(c: any): CalibrationInput {
     cityId: typeof c.cityId === 'string' ? c.cityId.slice(0, 40) : undefined,
     query: typeof c.query === 'string' ? c.query.trim().slice(0, 80) : undefined,
     coords,
+    dayOffset: c.dayOffset === 1 ? 1 : 0,
     date: typeof c.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.date) ? c.date : undefined,
     startTime: time(c.startTime),
     endTime: time(c.endTime),
@@ -118,8 +120,10 @@ async function getCandidates(city: CityData, center: Coordinates, dateISO: strin
   const curated = curatedFor(city.id);
   if (env().placesKey) {
     try {
-      const live = await fetchCandidates({
-        center, cityId: city.id, dateISO, currency: city.country === 'India' ? '₹' : '$', timeoutMs: Math.max(1200, deadlineMs)
+      const key = `cand:${city.id}:${center.lat.toFixed(2)},${center.lng.toFixed(2)}:${dateISO}`;
+      const live = await cached(key, async () => {
+        if (!reserveCalls(6)) throw new Error('daily_cap');
+        return fetchCandidates({ center, cityId: city.id, dateISO, currency: city.country === 'India' ? '₹' : '$', timeoutMs: Math.max(1200, deadlineMs) });
       });
       if (live.length >= 3) return { venues: live, source: 'google_places' };
     } catch (e) {
@@ -149,7 +153,7 @@ export async function generate(body: any): Promise<{ plan: DayPlan; meta: PlanMe
   const prefs = sanitizePrefs(body?.guardrails);
   const { city, anchor, label } = await resolveLocation(input);
   const now = clock(city, sanitizeClock(body?.now));
-  const today = input.date || now.date;
+  const today = input.date || addDays(now.date, input.dayOffset === 1 ? 1 : 0);
   const calibration = buildCalibration({ ...input, coords: anchor, locationLabel: label }, city, today);
   calibration.afterDark = input.afterDark ?? prefs.afterDarkMode;
   const sunsetMinutes = sunsetFor(city, today);
@@ -180,10 +184,35 @@ export async function generate(body: any): Promise<{ plan: DayPlan; meta: PlanMe
 
 /* ------------------------------------------------------------------ adapt */
 
+const cleanText = (v: unknown, max = 80) => String(v ?? '').replace(/[\u0000-\u001f<>{}`]/g, ' ').trim().slice(0, max);
+const num2 = (v: unknown, lo: number, hi: number, d: number) => (Number.isFinite(Number(v)) ? Math.min(hi, Math.max(lo, Number(v))) : d);
+
+/** The server never trusts the plan the browser sends back: re-derive identity/enums/numbers, clamp text. */
 function sanitizePlan(p: any): DayPlan {
   if (!p || typeof p !== 'object' || !Array.isArray(p.blocks) || !p.calibration || !p.city) throw new ApiError(400, 'bad_plan', 'Missing plan.');
   if (p.blocks.length > 8 || p.blocks.some((b: any) => !b?.venue?.placeId || !b?.blockId)) throw new ApiError(400, 'bad_plan', 'Malformed plan.');
-  return p as DayPlan;
+  const known = typeof p.city.id === 'string' ? CITIES.find(c => c.id === p.city.id) : undefined;
+  const city: CityData = known ?? {
+    id: cleanText(p.city.id, 40) || 'geo', name: cleanText(p.city.name), country: cleanText(p.city.country, 40), tagline: '',
+    coords: { lat: num2(p.city.coords?.lat, -90, 90, 0), lng: num2(p.city.coords?.lng, -180, 180, 0) },
+    timezone: typeof p.city.timezone === 'string' && /^[A-Za-z_]+(\/[A-Za-z_+\-0-9]+)*$/.test(p.city.timezone) ? p.city.timezone : 'UTC',
+    defaultSunset: '18:00', weatherVibe: '', heroImage: ''
+  };
+  const c = sanitizeCalibration(p.calibration);
+  const calibration = {
+    ...p.calibration,
+    cityId: city.id, cityName: city.name, country: city.country,
+    energy: c.energy ?? 'balanced', budget: c.budget ?? '₹₹', afterDark: c.afterDark ?? 'well_lit', social: c.social ?? 'ambient',
+    date: c.date ?? new Date().toISOString().slice(0, 10), startTime: c.startTime ?? '09:30', endTime: c.endTime ?? '19:30',
+    anchorCoords: { lat: num2(p.calibration.anchorCoords?.lat, -90, 90, city.coords.lat), lng: num2(p.calibration.anchorCoords?.lng, -180, 180, city.coords.lng) }
+  };
+  const blocks = p.blocks.map((b: any) => ({
+    ...b,
+    startMinutes: num2(b.startMinutes, 0, 2880, 0), endMinutes: num2(b.endMinutes, 0, 2880, 0),
+    bufferMinutesAfter: num2(b.bufferMinutesAfter, 0, 120, 20),
+    venue: { ...b.venue, name: cleanText(b.venue.name, 120), coords: { lat: num2(b.venue.coords?.lat, -90, 90, city.coords.lat), lng: num2(b.venue.coords?.lng, -180, 180, city.coords.lng) } }
+  }));
+  return { ...p, city, calibration, guardrails: sanitizePrefs(p.guardrails), blocks } as DayPlan;
 }
 
 const SCENARIOS = ['weather_turned', 'low_battery', 'running_late', 'hungry_now', 'shift_social', 'early_night'];
@@ -221,7 +250,7 @@ export async function adapt(body: any): Promise<{ plan: DayPlan; meta: PlanMeta 
       cityName: city.name, calibration: plan.calibration, guardrails: plan.guardrails, pool, blocksWanted: remaining,
       windowStart: Math.max(now.minutes, timeStringToMinutes(plan.calibration.startTime)),
       windowEnd: timeStringToMinutes(plan.calibration.endTime), sunsetMinutes,
-      scenarios, note, alreadyDone: done.map(b => b.venue.name)
+      scenarios, note, alreadyDone: done.map(b => cleanText(venues.find(v => v.placeId === b.venue.placeId)?.name ?? b.venue.name, 60))
     }, BUDGET_TOTAL_MS() - (Date.now() - started));
     if (out.ok) { hints = out.result.hints; usedFallback = false; llm = true; } else reason = out.reason;
   } else reason = 'deterministic_scenario';

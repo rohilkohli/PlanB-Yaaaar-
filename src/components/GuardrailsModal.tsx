@@ -3,9 +3,12 @@ import { Trash2, WifiOff, ShieldCheck } from 'lucide-react';
 import type { TravelerPreferences } from '../types/itinerary';
 import { BottomSheet, GlassButton, PrimaryButton, RadioGroup } from './ui';
 import { LegalLinks } from '../pages/LegalPages';
+import { t } from '../i18n';
 
 interface Props {
   preferences: TravelerPreferences;
+  lang: 'en' | 'hi';
+  onLangChange: (l: 'en' | 'hi') => void;
   isSimulatedOffline: boolean;
   onSave: (prefs: TravelerPreferences) => void;
   onToggleSimulateOffline: () => void;
@@ -20,7 +23,7 @@ const DIET = [
   { id: 'quiet_corner', label: 'Quiet corners' }
 ];
 
-export const GuardrailsModal: React.FC<Props> = ({ preferences, isSimulatedOffline, onSave, onToggleSimulateOffline, onResetAllData, onClose }) => {
+export const GuardrailsModal: React.FC<Props> = ({ preferences, lang, onLangChange, isSimulatedOffline, onSave, onToggleSimulateOffline, onResetAllData, onClose }) => {
   const [mobility, setMobility] = useState(preferences.mobility || 'stairs_okay');
   const [maxStride, setMaxStride] = useState<'15' | '25' | '40'>(String(preferences.maxStrideMinutes || 25) as '15' | '25' | '40');
   const [dietary, setDietary] = useState<string[]>(preferences.dietary || []);
@@ -38,7 +41,7 @@ export const GuardrailsModal: React.FC<Props> = ({ preferences, isSimulatedOffli
   };
 
   return (
-    <BottomSheet title="Preferences" subtitle="Saved on this device. Applied to every plan." onClose={onClose}>
+    <BottomSheet title={t('prefs.title')} subtitle="Saved on this device. Applied to every plan." onClose={onClose}>
       <div className="space-y-5">
         <section aria-labelledby="g-mob">
           <h3 id="g-mob" className="text-xs font-bold text-obsidian mb-2">Walking & mobility</h3>
@@ -96,6 +99,13 @@ export const GuardrailsModal: React.FC<Props> = ({ preferences, isSimulatedOffli
             options={[{ value: 'km', label: 'Kilometres' }, { value: 'mi', label: 'Miles' }]} />
         </section>
 
+        <section aria-labelledby="g-lang">
+          <h3 id="g-lang" className="text-xs font-bold text-obsidian mb-2">{t('prefs.language')}</h3>
+          <RadioGroup label={t('prefs.language')} variant="segmented" value={lang} onChange={v => onLangChange(v)}
+            options={[{ value: 'en', label: 'English' }, { value: 'hi', label: 'हिन्दी' }]} />
+          <p className="text-[11px] text-olive-slate mt-1.5">Hindi covers the main screens. Venue descriptions remain in English for now.</p>
+        </section>
+
         <section className="rounded-2xl bg-white/70 border border-white/80 p-3.5 flex gap-2.5 text-xs text-olive-slate">
           <ShieldCheck className="w-4 h-4 text-spruce shrink-0 mt-0.5" aria-hidden="true" />
           <p>No account, no tracking. Your plan and preferences stay on this device and are deleted after 14 days. Location is only used when you ask for it.</p>
@@ -121,7 +131,7 @@ export const GuardrailsModal: React.FC<Props> = ({ preferences, isSimulatedOffli
           {!confirmDelete ? (
             <button type="button" onClick={() => setConfirmDelete(true)}
               className="w-full min-h-[48px] rounded-2xl border border-red-300 bg-red-50 text-red-800 text-xs font-bold flex items-center justify-center gap-1.5">
-              <Trash2 className="w-4 h-4" aria-hidden="true" /><span>Reset & delete all my data</span>
+              <Trash2 className="w-4 h-4" aria-hidden="true" /><span>{t('prefs.reset')}</span>
             </button>
           ) : (
             <div role="alert" className="rounded-2xl border border-red-300 bg-red-50 p-3 space-y-2">
@@ -138,7 +148,7 @@ export const GuardrailsModal: React.FC<Props> = ({ preferences, isSimulatedOffli
 
         <div className="flex items-center gap-2.5 pt-1" aria-live="polite">
           <GlassButton onClick={onClose} className="px-4">Cancel</GlassButton>
-          <PrimaryButton onClick={save} className="flex-1">{saved ? 'Saved on this device ✓' : 'Save preferences'}</PrimaryButton>
+          <PrimaryButton onClick={save} className="flex-1">{saved ? 'Saved on this device ✓' : t('prefs.save')}</PrimaryButton>
         </div>
       </div>
     </BottomSheet>

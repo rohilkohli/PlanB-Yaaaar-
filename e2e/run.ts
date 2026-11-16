@@ -223,6 +223,19 @@ async function main() {
     await axeAudit(page, 'data sources page');
     step('privacy / terms / data-sources pages render and pass axe');
 
+    // ---- Hindi: switch in Preferences, the main screen changes, switch back
+    await page.goto(`${BASE}/preferences`);
+    await page.getByRole('dialog', { name: 'Preferences' }).getByRole('radio', { name: 'हिन्दी' }).click();
+    await page.goto(`${BASE}/?new=1`);
+    await page.getByRole('heading', { name: 'आप कहाँ जा रहे हैं?' }).waitFor();
+    await page.waitForTimeout(700); // let the fade-in finish so contrast is measured on final colours
+    await axeAudit(page, 'calibration (Hindi)');
+    await page.goto(`${BASE}/preferences`);
+    await page.getByRole('dialog', { name: 'पसंद' }).getByRole('radio', { name: 'English' }).click();
+    await page.goto(`${BASE}/?new=1`);
+    await page.getByRole('heading', { name: 'Where are you heading?' }).waitFor();
+    step('Hindi switch changes the main screen and switches back');
+
     // ---- Reset data
     await page.goto(`${BASE}/preferences`);
     await page.getByRole('button', { name: /Reset & delete all my data/ }).click();

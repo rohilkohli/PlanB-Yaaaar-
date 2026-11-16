@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { CloudRain, Battery, Clock, Utensils, Users, Moon, Lock, Edit3, Loader2, CloudOff } from 'lucide-react';
 import type { DayPlan } from '../types/itinerary';
 import { BottomSheet, PrimaryButton } from './ui';
-import { OFFLINE_MESSAGE } from './OfflineBadge';
+import { t } from '../i18n';
 
 export interface AdaptSubmit {
   scenarios: string[];
@@ -41,11 +41,11 @@ export const AdaptBottomSheet: React.FC<Props> = ({ currentPlan, isOffline, busy
   const canSubmit = !isOffline && !busy && (selected.length > 0 || note.trim().length > 0);
 
   return (
-    <BottomSheet title="What changed?" subtitle="Reshape the rest of today. Finished stops stay as they are." onClose={onClose}>
+    <BottomSheet title={t('adapt.title')} subtitle="Reshape the rest of today. Finished stops stay as they are." onClose={onClose}>
       {isOffline && (
         <div role="alert" className="mb-3 p-3 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 text-xs flex gap-2">
           <CloudOff className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
-          <p>{OFFLINE_MESSAGE.replace('Offline mode — your plan and addresses are saved. Reconnect to adapt.', 'You’re offline — reconnect to recalculate new stops. Your current plan is saved below.')}</p>
+          <p>{t('adapt.offline')}</p>
         </div>
       )}
 
@@ -115,7 +115,7 @@ export const AdaptBottomSheet: React.FC<Props> = ({ currentPlan, isOffline, busy
       {error && <p role="alert" className="mb-3 text-xs font-semibold text-red-700">{error}</p>}
 
       <PrimaryButton disabled={!canSubmit} onClick={() => onAdapt({ scenarios: selected, note: note.trim(), socialShift, useLocation })} className="w-full">
-        {busy ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /><span>Reshaping…</span></> : <span>Reshape rest of day</span>}
+        {busy ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /><span>{t('adapt.reshaping')}</span></> : <span>{t('adapt.reshape')}</span>}
       </PrimaryButton>
     </BottomSheet>
   );

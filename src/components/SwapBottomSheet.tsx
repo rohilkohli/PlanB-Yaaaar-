@@ -4,6 +4,7 @@ import type { DayPlan, PlanBlock, VerifiedVenue } from '../types/itinerary';
 import { openUntilLabel } from '../core/hours';
 import { swapRemote } from '../services/planService';
 import { BottomSheet, PrimaryButton, VenueImage } from './ui';
+import { t } from '../i18n';
 
 interface Props {
   currentPlan: DayPlan;
@@ -88,7 +89,7 @@ export const SwapBottomSheet: React.FC<Props> = ({ currentPlan, block, isOffline
               </p>
             </div>
             <PrimaryButton disabled={isOffline} onClick={() => onSwapConfirm(block.blockId, alt, reason)} className="w-full">
-              <span>Replace with this</span><ArrowRight className="w-4 h-4" aria-hidden="true" />
+              <span>{t('swap.choose')}</span><ArrowRight className="w-4 h-4" aria-hidden="true" />
             </PrimaryButton>
           </article>
         ))}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { RotateCcw, X } from 'lucide-react';
 import type { UndoState } from '../types/itinerary';
+import { t } from '../i18n';
 
 interface Props { undoState: UndoState; onUndo: () => void; onDismiss: () => void }
 
@@ -28,7 +29,7 @@ export const UndoToast: React.FC<Props> = ({ undoState, onUndo, onDismiss }) => 
       </div>
       <div className="flex items-center gap-1 shrink-0">
         <button type="button" onClick={onUndo} className="min-h-[44px] px-4 rounded-full bg-chartreuse text-obsidian text-xs font-bold active:scale-95 transition-transform">
-          Undo change
+          {t('undo.button')}
         </button>
         <button type="button" onClick={onDismiss} className="w-11 h-11 rounded-full text-white/80 hover:text-white flex items-center justify-center" aria-label="Dismiss">
           <X className="w-4 h-4" />

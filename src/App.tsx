@@ -5,6 +5,7 @@ import { ExploreView } from './components/ExploreView';
 import { MapExplorerView } from './components/MapExplorerView';
 import { CITIES } from './data/placesData';
 import { DataSourcesPage, PrivacyPage, TermsPage } from './pages/LegalPages';
+import { getLang, setLang, type Lang } from './i18n';
 import { NavigationDock } from './components/NavigationDock';
 import { GeneratingTransition } from './components/GeneratingTransition';
 import { AdaptBottomSheet, type AdaptSubmit } from './components/AdaptBottomSheet';
@@ -26,6 +27,8 @@ const todayIn = (tz: string) => nowIn(tz).date;
 
 export const App: React.FC = () => {
   const route = useRoute();
+  const [lang, setLangState] = useState<Lang>(() => getLang());
+  const changeLang = (l: Lang) => { setLang(l); setLangState(l); };
   const [ready, setReady] = useState(false);
   const [plan, setPlan] = useState<DayPlan | null>(null);
   const [preferences, setPreferences] = useState<TravelerPreferences>(() => storage.getPreferences());
@@ -313,6 +316,8 @@ export const App: React.FC = () => {
           <GuardrailsModal
             preferences={preferences}
             isSimulatedOffline={storage.isSimulatedOffline()}
+            lang={lang}
+            onLangChange={changeLang}
             onSave={handleSavePrefs}
             onToggleSimulateOffline={handleToggleOffline}
             onResetAllData={handleResetAll}

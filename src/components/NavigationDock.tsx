@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sliders, Compass, Sparkles, Globe, Map as MapIcon } from 'lucide-react';
+import { t } from '../i18n';
 
 interface NavigationDockProps {
   activeTab: 'calibrate' | 'today' | 'explore' | 'map';
@@ -52,8 +53,8 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
         <button
           type="button"
           onClick={() => onSelectTab('calibrate')}
-          title="New plan"
-          aria-label="New plan"
+          title={t('nav.plan')}
+          aria-label={t('nav.plan')}
           aria-current={activeTab === 'calibrate' ? 'page' : undefined}
           className={`flex items-center justify-center rounded-full transition-all duration-200 active:scale-95 ${
             'w-11 h-11'
@@ -89,8 +90,8 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
           type="button"
           onClick={onOpenAdapt}
           disabled={!hasActivePlan}
-          title={hasActivePlan ? 'Adapt my day' : 'Build a plan first'}
-          aria-label="Adapt my day"
+          title={hasActivePlan ? t('nav.adapt') : 'Build a plan first'}
+          aria-label={t('nav.adapt')}
           className={`relative flex items-center justify-center rounded-full transition-all duration-200 active:scale-95 ${
             'w-11 h-11'
           } ${
@@ -109,8 +110,8 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
         <button
           type="button"
           onClick={() => onSelectTab('map')}
-          title="Nearby map"
-          aria-label="Nearby map"
+          title={t('nav.map')}
+          aria-label={t('nav.map')}
           aria-current={activeTab === 'map' ? 'page' : undefined}
           className={`flex items-center justify-center rounded-full transition-all duration-200 active:scale-95 w-11 h-11 ${
             activeTab === 'map'

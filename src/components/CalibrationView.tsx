@@ -13,6 +13,7 @@ import { track } from '../services/analytics';
 import { GlassButton, PrimaryButton, RadioGroup } from './ui';
 import { fetchReverse } from '../services/planService';
 import { LegalLinks } from '../pages/LegalPages';
+import { t } from '../i18n';
 
 export interface BuildMeta { demo?: boolean; usedGps?: boolean }
 
@@ -170,7 +171,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
           type="button"
           onClick={onOpenGuardrails}
           className="w-11 h-11 rounded-full bg-white/75 backdrop-blur-xl border border-white/80 flex items-center justify-center text-obsidian hover:bg-white/90 active:scale-95 transition-all shadow-sm"
-          aria-label="Preferences and guardrails"
+          aria-label={t('calib.prefs')}
         >
           <Sliders className="w-4 h-4" />
         </button>
@@ -200,7 +201,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
       {step === 1 && (
         <section className="flex-1 flex flex-col animate-fade-in" aria-labelledby="q1">
           <h1 id="q1" ref={headingRef} tabIndex={-1} className="font-bold text-xl text-obsidian leading-snug tracking-tight mb-4 outline-none">
-            Where are you heading?
+            {t('calib.where')}
           </h1>
 
           <div className="relative mb-3">
@@ -251,7 +252,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
             >
               <span className="flex items-center gap-2.5">
                 <Navigation className={`w-4 h-4 text-spruce ${gpsLoading ? 'animate-spin' : ''}`} aria-hidden="true" />
-                <span className="text-sm font-semibold text-obsidian">{gpsLoading ? 'Locating…' : 'Use my location'}</span>
+                <span className="text-sm font-semibold text-obsidian">{gpsLoading ? 'Locating…' : t('calib.useLocation')}</span>
               </span>
               <span className="text-[11px] font-bold text-spruce">Once, not tracked</span>
             </button>
@@ -303,7 +304,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
             </PrimaryButton>
             <div className="flex items-center justify-center gap-1 mt-2">
               <button type="button" disabled={busy} onClick={build} className="min-h-[44px] px-3 text-xs font-semibold text-olive-slate underline decoration-dotted underline-offset-4">
-                Skip — build with defaults
+                {t('calib.skip')}
               </button>
               <span className="text-card-border" aria-hidden="true">·</span>
               <button
@@ -312,7 +313,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
                 onClick={() => { track('calibration_started', { entry_source: 'sample', used_gps: false }); onBuildPlan({ cityId: 'jaipur', energy: 'balanced', budget: '₹₹', afterDark: 'well_lit', social: 'ambient' }, { demo: true }); }}
                 className="min-h-[44px] px-3 text-xs font-semibold text-olive-slate underline decoration-dotted underline-offset-4"
               >
-                See a sample day in Jaipur
+                {t('calib.sample')}
               </button>
             </div>
           </div>
@@ -385,7 +386,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
           />
           <div className="pt-5 mt-auto flex items-center gap-2">
             <GlassButton onClick={() => setStep(2)} className="px-4"><ArrowLeft className="w-4 h-4" aria-hidden="true" /><span>Back</span></GlassButton>
-            <PrimaryButton onClick={build} disabled={busy} className="flex-1"><span>Build my day</span></PrimaryButton>
+            <PrimaryButton onClick={build} disabled={busy} className="flex-1"><span>{t('calib.build')}</span></PrimaryButton>
           </div>
         </section>
       )}

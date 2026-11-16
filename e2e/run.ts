@@ -145,8 +145,10 @@ async function main() {
     const sheet = page.getByRole('dialog', { name: new RegExp(`Replace ${original[1].slice(0, 12)}`) });
     await sheet.waitFor();
     await sheet.getByRole('radio', { name: /It’s closed/ }).click();
-    await sheet.getByRole('button', { name: 'Replace with this' }).nth(1).waitFor();
-    assert.equal(await sheet.getByRole('button', { name: 'Replace with this' }).count(), 2, 'two alternatives');
+    const replaceBtns = sheet.getByRole('button', { name: 'Replace with this' });
+    let alts = 0;
+    for (let i = 0; i < 40 && alts !== 2; i++) { await page.waitForTimeout(150); alts = await replaceBtns.count(); }
+    assert.equal(alts, 2, 'two alternatives');
     await page.screenshot({ path: `${SHOTS}/06-swap.png` });
     await axeAudit(page, 'swap sheet');
     await sheet.getByRole('button', { name: 'Replace with this' }).first().click();

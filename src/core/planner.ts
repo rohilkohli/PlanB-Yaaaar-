@@ -181,7 +181,9 @@ export function twoSentences(text: string): string {
 }
 
 const BANNED = /\b(must[- ]see|hurry|don'?t miss|last chance|limited time|now or never|unmissable|run)\b/i;
-export const toneSafe = (t: string) => !BANNED.test(t);
+/** Safety claims the app cannot back with data (PRD §27 / legal review): never shown, even if the model writes them. */
+const SAFETY_CLAIM = /\b(well[- ]?lit|safe|safety|secure|security|risk[- ]free|no danger|guaranteed)\b/i;
+export const toneSafe = (t: string) => !BANNED.test(t) && !SAFETY_CLAIM.test(t);
 
 function fitLine(v: VerifiedVenue, calib: Pick<CalibrationData, 'social' | 'energy' | 'afterDark'>, slot: SlotName): string {
   const bits: string[] = [];

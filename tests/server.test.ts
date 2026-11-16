@@ -318,3 +318,16 @@ describe('forged plans', () => {
     expect(out.guardrails.maxStrideMinutes).toBe(25);
   });
 });
+
+describe('AI copy never makes safety claims', () => {
+  it('drops explanations that say well-lit or safe, keeps the rest', () => {
+    const pool = PLACES_DATABASE.filter(v => v.cityId === 'jaipur');
+    const r = validateLlmOutput({ blocks: [
+      { place_id: pool[0].placeId, why_it_fits: 'A comfortable, well-lit space.', solo_tip: 'Easy alone.' },
+      { place_id: pool[1].placeId, why_it_fits: 'A calm courtyard for a slow morning.', solo_tip: 'It feels safe to sit alone here.' }
+    ] }, pool);
+    expect(r.ok && r.hints[0].whyItFits).toBeUndefined();
+    expect(r.ok && r.hints[1].soloTip).toBeUndefined();
+    expect(r.ok && r.hints[1].whyItFits).toContain('calm courtyard');
+  });
+});

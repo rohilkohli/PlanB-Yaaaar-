@@ -65,7 +65,7 @@ async function main() {
     await page.getByText('Enter a city or neighborhood to build your day.').waitFor();
     step('empty city is blocked with the PRD message');
 
-    await page.getByRole('radio', { name: /Jaipur/ }).click();
+    await page.fill('#city-input', 'Jaipur');
     await page.getByRole('button', { name: 'Next' }).click();
     await page.getByRole('heading', { name: /pace today/ }).waitFor();
     await page.getByRole('radio', { name: /Moderate/ }).click();
@@ -90,6 +90,19 @@ async function main() {
     await page.waitForTimeout(1200);
     const broken = await page.$$eval('article img', imgs => imgs.filter(i => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth === 0).length);
     assert.equal(broken, 0, 'no broken <img> on plan cards');
+
+    // ---- Location picker: 3 suggestions only, and "use my location" shows where we are
+    const gps = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, geolocation: { latitude: 26.9124, longitude: 75.7873 }, permissions: ['geolocation'] });
+    const gp = await gps.newPage();
+    await gp.goto(`${BASE}/?new=1`);
+    await gp.getByRole('heading', { name: 'Where are you heading?' }).waitFor();
+    assert.equal(await gp.locator('[role="radiogroup"][aria-label="Suggested destinations"] [role="radio"]').count(), 3, 'exactly 3 suggested destinations');
+    await gp.getByRole('button', { name: 'Use my location' }).click();
+    await gp.waitForFunction(() => (document.getElementById('city-input') as HTMLInputElement)?.value.length > 0, null, { timeout: 8000 });
+    const shown = await gp.inputValue('#city-input');
+    assert.match(shown, /Jaipur/i, `picked-up location visible in the field (got "${shown}")`);
+    await gps.close();
+    step('location picker shows 3 suggestions and the GPS-picked location in the field');
 
     // ---- Complete block 1
     await page.getByRole('button', { name: `Mark done, ${original[0]}` }).click();
@@ -167,7 +180,7 @@ async function main() {
     // ---- Late evening + "finish before dark" → "Plan tomorrow" really plans tomorrow
     await page.evaluate(() => localStorage.setItem('planb_test_clock', '20:00'));
     await page.goto(`${BASE}/?new=1`);
-    await page.getByRole('radio', { name: /Jaipur/ }).click();
+    await page.fill('#city-input', 'Jaipur');
     await page.getByRole('button', { name: 'Next' }).click();
     await page.getByRole('button', { name: 'Next' }).click();
     await page.getByRole('radio', { name: /Finish before dark/ }).click();

@@ -153,3 +153,13 @@ export async function fetchRainHint(c: Coordinates): Promise<boolean> {
 }
 
 export { CITIES };
+
+export async function fetchReverse(c: Coordinates): Promise<{ name: string } | null> {
+  if (storage.isOffline()) return null;
+  try {
+    const res = await fetch(`/api/geocode/reverse?lat=${c.lat.toFixed(4)}&lng=${c.lng.toFixed(4)}`, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok || !(res.headers.get('content-type') || '').includes('json')) return null;
+    const j = (await res.json()) as { place?: { name?: string } | null };
+    return j.place?.name ? { name: j.place.name } : null;
+  } catch { return null; }
+}

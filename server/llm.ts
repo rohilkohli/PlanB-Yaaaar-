@@ -71,7 +71,7 @@ export function buildPrompt(r: LlmRequest): string {
     scenarios: r.scenarios ?? [],
     already_done: r.alreadyDone ?? [],
     note: (r.note ?? '').slice(0, 140),
-    candidates: r.pool.slice(0, 20).map(v => {
+    candidates: r.pool.slice(0, 12).map(v => {
       const w = openWindow(v);
       return {
         place_id: v.placeId,
@@ -132,7 +132,7 @@ export async function sequenceWithLlm(r: LlmRequest, timeoutMs: number): Promise
     generationConfig: {
       responseMimeType: 'application/json',
       responseSchema: SCHEMA,
-      maxOutputTokens: 800, // PRD §18 output cap
+      maxOutputTokens: 600, // PRD §18 cap is 800; sized down for a 4-block answer
       temperature: 0.4,
       thinkingConfig: { thinkingBudget: 0 } // keep latency low; the scheduler does the reasoning that matters
     }

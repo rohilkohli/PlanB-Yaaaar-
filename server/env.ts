@@ -24,7 +24,7 @@ export function env(): ServerEnv {
   return {
     placesKey: e.GOOGLE_PLACES_API_KEY || null,
     geminiKey: e.GEMINI_API_KEY || null,
-    llmModel: e.LLM_MODEL || 'gemini-3.8-flash',
+    llmModel: e.LLM_MODEL || 'gemini-3.1-flash-lite',
     llmTimeoutMs: num(e.LLM_TIMEOUT_MS, 5500),
     deterministicOnly: /^(1|true|yes)$/i.test(e.USE_DETERMINISTIC_PLANNER || ''),
     limitGenerate: num(e.RATE_LIMIT_GENERATE_PER_DAY, 10),

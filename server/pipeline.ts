@@ -32,6 +32,8 @@ export interface PlanMeta {
 }
 
 const BUDGET_TOTAL_MS = () => env().llmTimeoutMs;
+/** Candidates sent to the model. Fewer = faster responses (measured: 20 timed out ~3 of 14 times). */
+const LLM_POOL = Number(process.env.LLM_POOL_SIZE) || 12;
 
 const DEFAULT_PREFS: TravelerPreferences = { mobility: 'stairs_okay', maxStrideMinutes: 25, dietary: [], units: 'km', afterDarkMode: 'well_lit' };
 
@@ -167,7 +169,7 @@ export async function generate(body: any): Promise<{ plan: DayPlan; meta: PlanMe
 
   let hints; let usedFallback = true; let reason: string | undefined; let llm = false;
   if (wanted > 0) {
-    const pool = rankPool(calibration, prefs, ctx, 20);
+    const pool = rankPool(calibration, prefs, ctx, LLM_POOL);
     const remainingBudget = BUDGET_TOTAL_MS() - (Date.now() - started);
     const out = await sequenceWithLlm({
       cityName: city.name, calibration, guardrails: prefs, pool, blocksWanted: wanted,
@@ -245,7 +247,7 @@ export async function adapt(body: any): Promise<{ plan: DayPlan; meta: PlanMeta 
   let hints; let usedFallback = true; let reason: string | undefined; let llm = false;
   if (remaining > 0 && !scenarios.includes('early_night')) {
     const done = plan.blocks.filter(b => b.status === 'completed');
-    const pool = rankPool(plan.calibration, plan.guardrails, { ...ctx, excludeIds: [...excludeIds, ...done.map(b => b.venue.placeId)] }, 20);
+    const pool = rankPool(plan.calibration, plan.guardrails, { ...ctx, excludeIds: [...excludeIds, ...done.map(b => b.venue.placeId)] }, LLM_POOL);
     const out = await sequenceWithLlm({
       cityName: city.name, calibration: plan.calibration, guardrails: plan.guardrails, pool, blocksWanted: remaining,
       windowStart: Math.max(now.minutes, timeStringToMinutes(plan.calibration.startTime)),

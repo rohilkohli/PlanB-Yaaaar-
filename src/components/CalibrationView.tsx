@@ -11,6 +11,7 @@ import { sunsetLocalMinutes } from '../core/sunset';
 import { fetchSuggestions } from '../services/planService';
 import { track } from '../services/analytics';
 import { GlassButton, PrimaryButton, RadioGroup } from './ui';
+import { fetchReverse } from '../services/planService';
 import { LegalLinks } from '../pages/LegalPages';
 
 export interface BuildMeta { demo?: boolean; usedGps?: boolean }
@@ -41,6 +42,8 @@ function defaultWindow(timeZone?: string, tomorrow = false) {
 export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails, onBuildPlan, serverError, busy, prefill }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [query, setQuery] = useState(prefill?.cityName ?? '');
+  // Three random real destinations per visit, instead of the full list.
+  const [picks] = useState(() => [...CITIES].sort(() => Math.random() - 0.5).slice(0, 3));
   const [cityId, setCityId] = useState<string | undefined>(prefill?.cityId && CITIES.some(c => c.id === prefill.cityId) ? prefill.cityId : undefined);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | undefined>();
   const [usedGps, setUsedGps] = useState(false);
@@ -105,10 +108,19 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
         setCoords(c);
         setUsedGps(true);
         setCityId(near?.id);
-        setQuery(near ? near.name : '');
-        setGpsLoading(false);
         setError(null);
-        setGpsNotice(near ? `Using your location near ${near.name}.` : 'Using your current location.');
+        setGpsLoading(false);
+        setGpsNotice('Finding your area…');
+        // Show what we picked up: nearest curated city, else the place name from reverse geocoding, else coordinates.
+        const label = near?.name;
+        if (label) { setQuery(label); setGpsNotice(`Using your location near ${label}.`); }
+        else {
+          setQuery('Your current location');
+          fetchReverse(c).then(r => {
+            if (r?.name) setQuery(r.name);
+            setGpsNotice(r?.name ? `Using your location near ${r.name}.` : 'Using your current location.');
+          });
+        }
       },
       () => {
         setGpsLoading(false);
@@ -278,9 +290,9 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
 
           <div className="mb-2">
             <RadioGroup
-              label="Popular cities"
+              label="Suggested destinations"
               value={(cityId ?? '') as string}
-              options={CITIES.map(c => ({ value: c.id, label: c.name, description: c.tagline }))}
+              options={picks.map(c => ({ value: c.id, label: c.name, description: c.tagline }))}
               onChange={pickCity}
             />
           </div>

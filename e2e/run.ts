@@ -207,6 +207,7 @@ async function main() {
     await safety.getByRole('button', { name: 'Save contact' }).click();
     await safety.getByRole('button', { name: 'Share my day live' }).click();
     await safety.getByText('Sharing is on').first().waitFor();
+    await page.waitForTimeout(700); // let fade-in animations finish so contrast is measured on final colours
     await axeAudit(page, 'safety sheet');
     const shareToken = await page.evaluate(() => JSON.parse(localStorage.getItem('planb_share')!).token as string);
     const writeKey = await page.evaluate(() => JSON.parse(localStorage.getItem('planb_share')!).writeKey as string);
@@ -216,6 +217,7 @@ async function main() {
     await viewer.getByText(/Waiting for their first location update/).waitFor();
     assert.ok((await viewer.locator('ol > li').count()) >= 1, 'viewer lists the plan');
     assert.equal(await viewer.locator('meta[name=robots]').count() + (await (await fetch(`${BASE}/s/${shareToken}`)).headers.get('x-robots-tag') ? 1 : 0) > 0, true, 'share page is noindex');
+    await viewer.waitForTimeout(700);
     await axeAudit(viewer, 'shared viewer');
     await page.evaluate(async ([t, k]) => { await fetch('/api/share/location', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: t, writeKey: k, lat: 26.9239, lng: 75.8267 }) }); }, [shareToken, writeKey]);
     await safety.getByRole('button', { name: /back safe/ }).click();
@@ -238,6 +240,7 @@ async function main() {
     await page.getByRole('button', { name: 'Day recap' }).click();
     await page.getByRole('heading', { name: /Your day/ }).waitFor();
     await page.locator('textarea').first().fill('Best masala chai of the trip');
+    await page.waitForTimeout(700); // let fade-in animations finish so contrast is measured on final colours
     await axeAudit(page, 'recap');
     await page.getByRole('button', { name: 'Create share link' }).click();
     await page.getByRole('button', { name: 'Delete shared link' }).waitFor();
@@ -245,6 +248,7 @@ async function main() {
     const rv = await context.newPage();
     await rv.goto(`${BASE}/r/${recapToken}`);
     await rv.getByText(/Best masala chai of the trip/).waitFor();
+    await rv.waitForTimeout(700);
     await axeAudit(rv, 'recap viewer');
     await rv.close();
     await page.getByRole('button', { name: 'Delete shared link' }).click();
@@ -257,6 +261,7 @@ async function main() {
     await page.evaluate(() => { const e: any = new Event('beforeinstallprompt'); e.prompt = async () => undefined; e.userChoice = Promise.resolve({ outcome: 'dismissed' }); window.dispatchEvent(e); });
     await page.getByText('Add PlanB to your home screen').waitFor();
     await page.getByRole('button', { name: 'Turn on reminders' }).waitFor();
+    await page.waitForTimeout(700); // let fade-in animations finish so contrast is measured on final colours
     await axeAudit(page, 'install card');
     await page.getByRole('button', { name: 'Not now' }).click();
     assert.equal(await page.getByText('Add PlanB to your home screen').count(), 0, 'dismissed card stays hidden');

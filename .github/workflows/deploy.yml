@@ -14,6 +14,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   PROJECT_ID: planb-solo-90824
   REGION: asia-south1
   SERVICE: planb
@@ -35,27 +36,29 @@ jobs:
           service_account: planb-deployer@planb-solo-90824.iam.gserviceaccount.com
       - uses: google-github-actions/setup-gcloud@v2
 
-      - name: Remember the live revision (for rollback)
-        id: prev
-        run: echo "rev=$(gcloud run services describe $SERVICE --region=$REGION --project=$PROJECT_ID --format='value(status.latestReadyRevisionName)')" >> "$GITHUB_OUTPUT"
-
-      - name: Deploy
+      - name: Deploy a candidate revision (no traffic)
+        id: deploy
         run: |
           gcloud run deploy $SERVICE --source . --project=$PROJECT_ID --region=$REGION -q \
+            --no-traffic --tag=candidate \
             --allow-unauthenticated --max-instances=2 --memory=512Mi \
             --set-secrets=GOOGLE_PLACES_API_KEY=places-key:latest,GEMINI_API_KEY=gemini-key:latest,PLAN_SIGNING_KEY=plan-signing-key:latest,GOOGLE_MAPS_BROWSER_KEY=maps-key:latest \
             --set-env-vars=NODE_ENV=production,RATE_LIMIT_GENERATE_PER_DAY=10,PLACES_DAILY_REQUEST_CAP=700,GOOGLE_CLOUD_PROJECT=planb-solo-90824
+          REV=$(gcloud run services describe $SERVICE --region=$REGION --project=$PROJECT_ID --format='value(status.latestCreatedRevisionName)')
+          echo "rev=$REV" >> "$GITHUB_OUTPUT"
+          TAGURL=$(gcloud run services describe $SERVICE --region=$REGION --project=$PROJECT_ID --format=json | python3 -c "import json,sys; print(next(t['url'] for t in json.load(sys.stdin)['status']['traffic'] if t.get('tag')=='candidate'))")
+          echo "url=$TAGURL" >> "$GITHUB_OUTPUT"
 
-      - name: Smoke test the new revision
-        id: smoke
+      - name: Smoke test the candidate
         run: |
-          URL=$(gcloud run services describe $SERVICE --region=$REGION --project=$PROJECT_ID --format='value(status.url)')
+          URL='${{ steps.deploy.outputs.url }}'
           for i in 1 2 3 4 5 6; do
-            if curl -fsS "$URL/api/health" | grep -q '"ok":true' && curl -fsS -o /dev/null "$URL/today"; then echo "healthy"; exit 0; fi
+            if curl -fsS "$URL/api/health" | grep -q '"ok":true' && curl -fsS -o /dev/null "$URL/today" && curl -fsSI "$URL/" | grep -qi '^content-security-policy:'; then echo "healthy"; exit 0; fi
             sleep 10
           done
-          echo "smoke test failed"; exit 1
+          echo "smoke test failed - the live revision keeps serving traffic"; exit 1
 
-      - name: Roll back on failed smoke test
-        if: failure() && steps.smoke.outcome == 'failure' && steps.prev.outputs.rev != ''
-        run: gcloud run services update-traffic $SERVICE --region=$REGION --project=$PROJECT_ID --to-revisions=${{ steps.prev.outputs.rev }}=100
+      - name: Promote the candidate to 100% of traffic
+        run: |
+          gcloud run services update-traffic $SERVICE --region=$REGION --project=$PROJECT_ID --to-revisions=${{ steps.deploy.outputs.rev }}=100
+          gcloud run services update-traffic $SERVICE --region=$REGION --project=$PROJECT_ID --remove-tags=candidate || true

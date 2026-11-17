@@ -99,6 +99,12 @@ export async function handle(req: ApiRequest): Promise<ApiResponse> {
         if (!img) return json(404, { error: 'no_photo' });
         return { status: 200, body: Buffer.from(img.bytes), headers: { 'Content-Type': img.type, 'Cache-Control': 'private, no-store' } };
       }
+      case 'POST /api/csp-report': {
+        const lim = await limited(req, 'csp', 60); if (lim) return lim;
+        const r = ((req.body as any)?.['csp-report'] ?? req.body ?? {}) as Record<string, unknown>;
+        logEvent('csp_violation', { directive: String(r['violated-directive'] ?? r['effectiveDirective'] ?? '').slice(0, 80), blocked: String(r['blocked-uri'] ?? r['blockedURL'] ?? '').slice(0, 200), document: String(r['document-uri'] ?? '').slice(0, 120) });
+        return { status: 204 };
+      }
       case 'POST /api/events': {
         const lim = await limited(req, 'events', e.limitEvents); if (lim) return lim;
         recordEvent(req.body);

@@ -25,8 +25,8 @@ export default {
         'brand-lime': "#b8ee30"
       },
       fontFamily: {
-        sans: ["Plus Jakarta Sans", "system-ui", "-apple-system", "sans-serif"],
-        headline: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+        sans: ["Plus Jakarta Sans Variable", "Plus Jakarta Sans", "system-ui", "-apple-system", "sans-serif"],
+        headline: ["Plus Jakarta Sans Variable", "Plus Jakarta Sans", "system-ui", "sans-serif"],
         editorial: ["Playfair Display", "Georgia", "serif"]
       },
       borderRadius: {

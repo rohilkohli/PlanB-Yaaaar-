@@ -1,24 +1,26 @@
 /**
- * Security headers for every response. Most are enforced. The Content-Security-Policy is REPORT-ONLY by default because
- * Google Maps loads scripts, styles and images from several Google hosts and I could not verify them in a real browser;
- * set CSP_MODE=enforce once the browser console shows no violations on the live site.
+ * Security headers for every response. The Content-Security-Policy is ENFORCED by default and follows Google's documented
+ * CSP for the Maps JavaScript API. Violations are posted to /api/csp-report and land in Cloud Logging as `csp_violation`.
+ * Set CSP_MODE=report to fall back to report-only without a code change.
  */
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' https://maps.googleapis.com https://maps.gstatic.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: blob: https://*.googleusercontent.com https://maps.gstatic.com https://maps.googleapis.com https://*.ggpht.com https://images.unsplash.com",
-  "connect-src 'self' https://maps.googleapis.com",
+  "script-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.google.com",
+  "style-src 'self' 'unsafe-inline'",
+  "font-src 'self' data:",
+  "img-src 'self' data: blob: https://*.googleusercontent.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.ggpht.com https://images.unsplash.com",
+  "connect-src 'self' https://*.googleapis.com https://*.google.com https://*.gstatic.com",
   "worker-src 'self' blob:",
+  "frame-src 'self' https://*.google.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "object-src 'none'"
+  "object-src 'none'",
+  'report-uri /api/csp-report'
 ].join('; ');
 
 export function securityHeaders(): Record<string, string> {
-  const enforce = process.env.CSP_MODE === 'enforce';
+  const enforce = process.env.CSP_MODE !== 'report';
   return {
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
     'X-Content-Type-Options': 'nosniff',

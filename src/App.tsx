@@ -1,16 +1,12 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { CalibrationView, type BuildMeta } from './components/CalibrationView';
 import { ActiveCanvasView } from './components/ActiveCanvasView';
-import { ExploreView } from './components/ExploreView';
-import { MapExplorerView } from './components/MapExplorerView';
 import { CITIES } from './data/placesData';
 import { DataSourcesPage, PrivacyPage, TermsPage } from './pages/LegalPages';
 import { getLang, setLang, type Lang } from './i18n';
 import { NavigationDock } from './components/NavigationDock';
 import { GeneratingTransition } from './components/GeneratingTransition';
-import { AdaptBottomSheet, type AdaptSubmit } from './components/AdaptBottomSheet';
-import { SwapBottomSheet } from './components/SwapBottomSheet';
-import { GuardrailsModal } from './components/GuardrailsModal';
+import type { AdaptSubmit } from './components/AdaptBottomSheet';
 import { UndoToast } from './components/UndoToast';
 import { OfflineBadge } from './components/OfflineBadge';
 
@@ -24,6 +20,13 @@ import type { CalibrationInput } from './core/calibration';
 import type { CityData, DayPlan, PlanBlock, TravelerPreferences, UndoState, VerifiedVenue } from './types/itinerary';
 
 const todayIn = (tz: string) => nowIn(tz).date;
+
+// Screens that aren't needed for the first paint load on demand, which keeps the initial download small.
+const MapExplorerView = lazy(() => import('./components/MapExplorerView').then(m => ({ default: m.MapExplorerView })));
+const ExploreView = lazy(() => import('./components/ExploreView').then(m => ({ default: m.ExploreView })));
+const AdaptBottomSheet = lazy(() => import('./components/AdaptBottomSheet').then(m => ({ default: m.AdaptBottomSheet })));
+const SwapBottomSheet = lazy(() => import('./components/SwapBottomSheet').then(m => ({ default: m.SwapBottomSheet })));
+const GuardrailsModal = lazy(() => import('./components/GuardrailsModal').then(m => ({ default: m.GuardrailsModal })));
 
 export const App: React.FC = () => {
   const route = useRoute();
@@ -235,6 +238,7 @@ export const App: React.FC = () => {
   const tab = base;
 
   return (
+    <Suspense fallback={null}>
     <div className="min-h-screen w-full bg-[#EEF2E6] flex justify-center text-obsidian antialiased selection:bg-chartreuse selection:text-obsidian">
       <div className="w-full max-w-[440px] min-h-screen bg-canvas shadow-2xl relative flex flex-col border-x border-card-border overflow-x-hidden">
         <div className="pointer-events-none absolute -top-20 -left-20 w-72 h-72 rounded-full bg-chartreuse/20 blur-3xl -z-10" aria-hidden="true" />
@@ -328,6 +332,7 @@ export const App: React.FC = () => {
         )}
       </div>
     </div>
+    </Suspense>
   );
 };
 

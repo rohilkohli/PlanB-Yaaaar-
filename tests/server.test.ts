@@ -361,17 +361,20 @@ describe('holiday-aware hours (currentOpeningHours)', () => {
 
 import { securityHeaders } from '../server/headers';
 describe('security headers', () => {
-  it('sets the standard protections and CSP in report-only mode by default', () => {
+  it('sets the standard protections and enforces CSP by default', () => {
     const h = securityHeaders();
     expect(h['Strict-Transport-Security']).toContain('max-age=');
     expect(h['X-Content-Type-Options']).toBe('nosniff');
     expect(h['Permissions-Policy']).toContain('geolocation=(self)');
-    expect(h['Content-Security-Policy-Report-Only']).toContain("frame-ancestors 'none'");
-    expect(h['Content-Security-Policy']).toBeUndefined();
+    expect(h['Content-Security-Policy']).toContain("frame-ancestors 'none'");
+    expect(h['Content-Security-Policy']).toContain('report-uri /api/csp-report');
+    expect(h['Content-Security-Policy-Report-Only']).toBeUndefined();
   });
-  it('enforces CSP when CSP_MODE=enforce', () => {
-    process.env.CSP_MODE = 'enforce';
-    expect(securityHeaders()['Content-Security-Policy']).toContain("default-src 'self'");
+  it('falls back to report-only when CSP_MODE=report', () => {
+    process.env.CSP_MODE = 'report';
+    const h = securityHeaders();
+    expect(h['Content-Security-Policy-Report-Only']).toContain("default-src 'self'");
+    expect(h['Content-Security-Policy']).toBeUndefined();
     delete process.env.CSP_MODE;
   });
 });

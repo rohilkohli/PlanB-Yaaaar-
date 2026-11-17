@@ -42,8 +42,8 @@ jobs:
           gcloud run deploy $SERVICE --source . --project=$PROJECT_ID --region=$REGION -q \
             --no-traffic --tag=candidate \
             --allow-unauthenticated --max-instances=2 --memory=512Mi \
-            --set-secrets=GOOGLE_PLACES_API_KEY=places-key:latest,GEMINI_API_KEY=gemini-key:latest,PLAN_SIGNING_KEY=plan-signing-key:latest,GOOGLE_MAPS_BROWSER_KEY=maps-key:latest \
-            --set-env-vars=NODE_ENV=production,RATE_LIMIT_GENERATE_PER_DAY=10,PLACES_DAILY_REQUEST_CAP=700,GOOGLE_CLOUD_PROJECT=planb-solo-90824
+            --set-secrets=GOOGLE_PLACES_API_KEY=places-key:latest,GEMINI_API_KEY=gemini-key:latest,PLAN_SIGNING_KEY=plan-signing-key:latest,GOOGLE_MAPS_BROWSER_KEY=maps-key:latest,VAPID_PRIVATE_KEY=vapid-private-key:latest \
+            --set-env-vars=NODE_ENV=production,RATE_LIMIT_GENERATE_PER_DAY=10,PLACES_DAILY_REQUEST_CAP=700,GOOGLE_CLOUD_PROJECT=planb-solo-90824,VAPID_PUBLIC_KEY=BF87Ta8NLiuw9x2dnPu_qJ3TMUitaGqZt5CX9eP3cmAwH15fPNjUMezd9ULfbyukVyzGfypaaVe1UYdjfqSQseA
           REV=$(gcloud run services describe $SERVICE --region=$REGION --project=$PROJECT_ID --format='value(status.latestCreatedRevisionName)')
           echo "rev=$REV" >> "$GITHUB_OUTPUT"
           TAGURL=$(gcloud run services describe $SERVICE --region=$REGION --project=$PROJECT_ID --format=json | python3 -c "import json,sys; print(next(t['url'] for t in json.load(sys.stdin)['status']['traffic'] if t.get('tag')=='candidate'))")

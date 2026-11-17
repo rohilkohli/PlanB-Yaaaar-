@@ -54,7 +54,8 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           // Precache the app shell; SPA routes (/today, /preferences) resolve to index.html offline.
-          globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
+          globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}'],
+          importScripts: ['push-sw.js'],
           navigateFallback: '/index.html',
           navigateFallbackDenylist: [/^\/api\//],
           cleanupOutdatedCaches: true,

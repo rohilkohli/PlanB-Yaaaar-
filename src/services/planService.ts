@@ -186,11 +186,16 @@ export async function hydratePlan(plan: DayPlan): Promise<DayPlan> {
   }) };
 }
 
-export async function loadServerConfig(): Promise<{ placesOfflineStorage: boolean; contactEmail: string | null }> {
-  try {
-    const res = await fetch('/api/config', { signal: AbortSignal.timeout(3000) });
-    if (!res.ok || !(res.headers.get('content-type') || '').includes('json')) throw new Error('config');
-    const j = (await res.json()) as { placesOfflineStorage?: boolean; contactEmail?: string | null };
-    return { placesOfflineStorage: !!j.placesOfflineStorage, contactEmail: j.contactEmail ?? null };
-  } catch { return { placesOfflineStorage: false, contactEmail: null }; }
+export interface ServerConfig { placesOfflineStorage: boolean; contactEmail: string | null; vapidPublicKey: string | null }
+let configPromise: Promise<ServerConfig> | null = null;
+export function loadServerConfig(): Promise<ServerConfig> {
+  configPromise ??= (async () => {
+    try {
+      const res = await fetch('/api/config', { signal: AbortSignal.timeout(3000) });
+      if (!res.ok || !(res.headers.get('content-type') || '').includes('json')) throw new Error('config');
+      const j = (await res.json()) as Partial<ServerConfig>;
+      return { placesOfflineStorage: !!j.placesOfflineStorage, contactEmail: j.contactEmail ?? null, vapidPublicKey: j.vapidPublicKey ?? null };
+    } catch { configPromise = null; return { placesOfflineStorage: false, contactEmail: null, vapidPublicKey: null }; }
+  })();
+  return configPromise;
 }

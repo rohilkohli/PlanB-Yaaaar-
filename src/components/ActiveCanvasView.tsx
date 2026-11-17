@@ -14,7 +14,7 @@ import {
   List,
   Compass
 } from 'lucide-react';
-import { AlertCircle, Copy, Moon, PartyPopper, Plus, RotateCw, ShieldCheck, CalendarPlus } from 'lucide-react';
+import { AlertCircle, BookOpen, Copy, Moon, PartyPopper, Plus, RotateCw, ShieldCheck, CalendarPlus } from 'lucide-react';
 import { DayPlan, PlanBlock } from '../types/itinerary';
 import { haversineKm } from '../core/geo';
 import { nowIn } from '../core/clock';
@@ -35,6 +35,10 @@ interface ActiveCanvasViewProps {
   onAddBonus: () => void;
   onRetryLive: () => void;
   onCopyPlan: () => void;
+  onOpenSafety: () => void;
+  onOpenRecap: () => void;
+  /** Check-in / install / reminders cards, supplied by the app shell. */
+  banner?: React.ReactNode;
   storageBlocked: boolean;
   busy: boolean;
   units: 'km' | 'mi';
@@ -55,6 +59,9 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
   onAddBonus,
   onRetryLive,
   onCopyPlan,
+  onOpenSafety,
+  onOpenRecap,
+  banner,
   storageBlocked,
   busy,
   units,
@@ -136,6 +143,16 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           </button>
         </div>
       </header>
+
+      <div className="flex gap-2 mb-3">
+        <button type="button" onClick={onOpenSafety} className="min-h-[44px] px-4 rounded-full bg-white/85 border border-card-border text-xs font-bold text-obsidian inline-flex items-center gap-1.5 active:scale-95 transition-all shadow-xs">
+          <ShieldCheck className="w-4 h-4 text-spruce" aria-hidden="true" />{t('safety.button')}
+        </button>
+        <button type="button" onClick={onOpenRecap} className="min-h-[44px] px-4 rounded-full bg-white/85 border border-card-border text-xs font-bold text-obsidian inline-flex items-center gap-1.5 active:scale-95 transition-all shadow-xs">
+          <BookOpen className="w-4 h-4 text-spruce" aria-hidden="true" />{t('recap.button')}
+        </button>
+      </div>
+      {banner}
 
       {/* Status banners */}
       <div className="space-y-2 mb-3" aria-live="polite">

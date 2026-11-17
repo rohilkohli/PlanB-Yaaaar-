@@ -9,6 +9,10 @@ import { GeneratingTransition } from './components/GeneratingTransition';
 import type { AdaptSubmit } from './components/AdaptBottomSheet';
 import { UndoToast } from './components/UndoToast';
 import { OfflineBadge } from './components/OfflineBadge';
+import { CheckInCard } from './components/CheckInCard';
+import { InstallCard } from './components/InstallCard';
+import { clearShareData, deleteRecap, endShare, liveLocation, syncBlockStatus } from './services/liveShare';
+import { disableReminders, syncReminders } from './services/pushService';
 
 import { storage } from './services/storage';
 import { adaptRemote, buildPlan, fetchRainHint, hydratePlan, loadServerConfig, PlanError } from './services/planService';
@@ -26,6 +30,9 @@ const MapExplorerView = lazy(() => import('./components/MapExplorerView').then(m
 const ExploreView = lazy(() => import('./components/ExploreView').then(m => ({ default: m.ExploreView })));
 const AdaptBottomSheet = lazy(() => import('./components/AdaptBottomSheet').then(m => ({ default: m.AdaptBottomSheet })));
 const SwapBottomSheet = lazy(() => import('./components/SwapBottomSheet').then(m => ({ default: m.SwapBottomSheet })));
+const SafetySheet = lazy(() => import('./components/SafetySheet').then(m => ({ default: m.SafetySheet })));
+const RecapView = lazy(() => import('./components/RecapView').then(m => ({ default: m.RecapView })));
+const SharedPage = lazy(() => import('./pages/SharedPage').then(m => ({ default: m.SharedPage })));
 const GuardrailsModal = lazy(() => import('./components/GuardrailsModal').then(m => ({ default: m.GuardrailsModal })));
 
 export const App: React.FC = () => {
@@ -57,6 +64,7 @@ export const App: React.FC = () => {
       loadServerConfig().then(c => storage.setAllowPlacesStorage(c.placesOfflineStorage));
       if (saved) hydratePlan(saved).then(h => { if (alive && h !== saved) setPlan(h); });
       setPreferences(storage.getPreferences());
+      liveLocation.sync(); // resume location sharing if a share is still active
       setReady(true);
     });
     const unsub = storage.subscribeUndo(setUndoState);
@@ -71,17 +79,20 @@ export const App: React.FC = () => {
   const params = new URLSearchParams(route.search);
   const wantsNew = params.has('new');
   const isLegal = ['/privacy', '/terms', '/data-sources'].includes(route.path);
+  const shared = route.path.match(/^\/(s|r)\/([A-Za-z0-9_-]{10,60})$/);
   const base: 'calibrate' | 'today' | 'explore' | 'map' =
-    route.path === '/explore' ? 'explore' : route.path === '/map' ? 'map' : route.path === '/today' || route.path === '/preferences' ? (plan ? 'today' : 'calibrate') : 'calibrate';
+    route.path === '/explore' ? 'explore' : route.path === '/map' ? 'map' : route.path === '/today' || route.path === '/preferences' || route.path === '/recap' ? (plan ? 'today' : 'calibrate') : 'calibrate';
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || shared) return;
     if (route.path === '/' && plan && planIsToday && !wantsNew) navigate('/today', { replace: true });
     else if (route.path === '/today' && !plan) navigate('/', { replace: true });
-    else if (!['/', '/today', '/preferences', '/explore', '/map', '/privacy', '/terms', '/data-sources'].includes(route.path)) navigate(plan && planIsToday ? '/today' : '/', { replace: true });
-  }, [ready, route.path, plan, planIsToday, wantsNew]);
+    else if (!['/', '/today', '/preferences', '/explore', '/map', '/recap', '/privacy', '/terms', '/data-sources'].includes(route.path)) navigate(plan && planIsToday ? '/today' : '/', { replace: true });
+  }, [ready, shared, route.path, plan, planIsToday, wantsNew]);
 
   const isPrefsOpen = route.path === '/preferences';
+  const isSafetyOpen = route.path === '/today' && (route.hash === 'safety' || route.hash === 'checkin') && !!plan;
+  const isRecap = route.path === '/recap' && !!plan;
   const isAdaptOpen = route.path === '/today' && route.hash === 'adapt' && !!plan;
   const swapBlock: PlanBlock | undefined = route.path === '/today' && route.hash.startsWith('swap-') && plan
     ? plan.blocks.find(b => b.blockId === route.hash.slice(5)) : undefined;
@@ -101,6 +112,7 @@ export const App: React.FC = () => {
     setPlan(next);
     await storage.setActivePlan(next, undoMessage);
     if (say) setAnnounce(say);
+    void syncReminders(next); // keeps the (max two) push reminders in step with the plan
   }, []);
 
   /* ---------------------------------------------------------------- generate */
@@ -201,6 +213,8 @@ export const App: React.FC = () => {
     const firstOpen = blocks.findIndex(b => b.status !== 'completed' && b.status !== 'skipped');
     const normalised = blocks.map((b, i) => b.status === 'completed' || b.status === 'skipped' ? b : { ...b, status: (i === firstOpen ? 'in_progress' : 'upcoming') as PlanBlock['status'] });
     await commit({ ...plan, blocks: normalised, allDone: normalised.every(b => b.status === 'completed' || b.status === 'skipped') });
+    const changed = normalised.find(b => b.blockId === blockId);
+    if (changed) void syncBlockStatus(blockId, changed.status); // reflected on a live share, if one is on
   };
 
   const handleLoadCurated = (city: CityData) => {
@@ -218,6 +232,9 @@ export const App: React.FC = () => {
   const handleToggleOffline = () => { storage.setSimulatedOffline(!storage.isSimulatedOffline()); setIsOffline(storage.isOffline()); };
 
   const handleResetAll = async () => {
+    // Delete everything that left the phone too: the live share, the shared recap and the push subscription.
+    await Promise.allSettled([endShare(), deleteRecap(), disableReminders()]);
+    clearShareData();
     await storage.clearAllData();
     setPlan(null);
     setPreferences(storage.getPreferences());
@@ -232,6 +249,18 @@ export const App: React.FC = () => {
           <span className="font-extrabold text-lg text-obsidian tracking-tight animate-pulse">PlanB</span>
         </div>
       </div>
+    );
+  }
+
+  if (shared) {
+    return (
+      <Suspense fallback={null}>
+        <div className="min-h-screen w-full bg-[#EEF2E6] flex justify-center text-obsidian antialiased">
+          <div className="w-full max-w-[440px] min-h-screen bg-canvas shadow-2xl relative flex flex-col border-x border-card-border overflow-x-hidden">
+            <SharedPage kind={shared[1] === 's' ? 'share' : 'recap'} token={shared[2]} />
+          </div>
+        </div>
+      </Suspense>
     );
   }
 
@@ -261,7 +290,7 @@ export const App: React.FC = () => {
           />
         )}
 
-        {!isLegal && tab === 'today' && plan && (
+        {!isLegal && tab === 'today' && plan && !isRecap && (
           <ActiveCanvasView
             plan={plan}
             isOffline={isOffline}
@@ -278,8 +307,13 @@ export const App: React.FC = () => {
             onAddBonus={handleBonus}
             onRetryLive={handleRetryLive}
             onCopyPlan={handleCopyPlan}
+            onOpenSafety={() => navigate('/today#safety')}
+            onOpenRecap={() => navigate('/recap')}
+            banner={<><CheckInCard plan={plan} onOpenSafety={() => navigate('/today#safety')} /><InstallCard plan={plan} /></>}
           />
         )}
+
+        {isRecap && plan && <RecapView plan={plan} isOffline={isOffline} onBack={() => navigate('/today')} />}
 
         {isLegal && (route.path === '/privacy' ? <PrivacyPage /> : route.path === '/terms' ? <TermsPage /> : <DataSourcesPage />)}
 
@@ -317,6 +351,8 @@ export const App: React.FC = () => {
         {swapBlock && plan && (
           <SwapBottomSheet currentPlan={plan} block={swapBlock} isOffline={isOffline} onSwapConfirm={handleSwapConfirm} onClose={closeSheet} />
         )}
+
+        {isSafetyOpen && plan && <SafetySheet plan={plan} isOffline={isOffline} onClose={closeSheet} />}
 
         {isPrefsOpen && (
           <GuardrailsModal

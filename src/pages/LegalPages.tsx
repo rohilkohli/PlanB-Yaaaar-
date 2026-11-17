@@ -78,16 +78,26 @@ export const PrivacyPage: React.FC = () => (
 
     <H>Services that receive some of this</H>
     <L items={[
-      <>Google Maps Platform (Places, Geocoding, Time Zone, Weather) receives the places or coordinates we look up, from our server’s address, not from your device. See <A href="https://policies.google.com/privacy">Google’s privacy policy</A>.</>,
-      'Anthropic, when AI sequencing is switched on, receives the city, your settings and preferences, a list of candidate venues and, if you typed one, your short note, in order to suggest and explain stops. It does not receive your IP address or location. If AI sequencing is off, no data goes to Anthropic.',
+      <>Google Maps Platform (Places, Geocoding, Routes, Time Zone, Weather) receives the places or coordinates we look up, from our server’s address, not from your device. See <A href="https://policies.google.com/privacy">Google’s privacy policy</A>.</>,
+      <>Google’s Gemini API, when AI sequencing is switched on, receives the city, your settings and preferences and a list of candidate venues in order to suggest and explain stops. It does not receive your IP address, your location or the note you type. If AI sequencing is off, nothing is sent to Gemini. See <A href="https://policies.google.com/privacy">Google’s privacy policy</A>.</>,
       'Open-Meteo may receive approximate coordinates (rounded to about 1 km) for the weather when Google’s weather service is unavailable.',
-      'Google Fonts and image hosts (for example Unsplash) see your IP address when your device loads fonts and photos.',
+      'Image hosts (for example Unsplash and Google) see your IP address when your device loads photos. Fonts are served by PlanB itself.',
+      'Your browser’s push service (Google, Apple or Mozilla) delivers reminders if you turn them on.',
       'Hosting is on Google Cloud Run in Mumbai (asia-south1).'
+    ]} />
+
+    <H>Safety sharing, recaps and reminders (only if you use them)</H>
+    <L items={[
+      'Share my day live: when you turn it on, our server stores your plan’s times and stops (names only for our own curated places; Google places are stored as IDs only) and your latest location while PlanB is open on your phone. Only the latest point is kept, never a history. Anyone you give the link to can see it. It is not indexed by search engines. It ends when you tap Stop sharing, when you reset your data, or automatically after 18 hours, and the data is deleted.',
+      'Your trusted contact’s name and phone number stay on your phone. They are never sent to us.',
+      'Day recap: if you create a link, our server stores the stops and the short notes you wrote, readable by anyone with the link, for up to 30 days. You can delete it at any time.',
+      'Reminders: if you turn them on, we store your browser’s push address and the times of at most two notifications for your plan, until they are sent or the day ends. Turn them off in the app or in your browser settings.',
+      'Links are long random codes. Anyone who has a link can open it, so share them only with people you trust. PlanB is not an emergency service; in an emergency call 112.'
     ]} />
 
     <H>Your choices</H>
     <L items={[
-      'Delete everything on your device: Preferences → Reset & delete all my data.',
+      'Delete everything on your device and end any live share, recap link and reminders: Preferences → Reset & delete all my data.',
       'Use the app without sharing location: type a city instead.',
       'Because we hold no account or identifier for you, there is no profile on our side to access or delete. If you believe we hold something about you, tell us (below) and we will look.'
     ]} />

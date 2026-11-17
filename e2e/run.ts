@@ -44,7 +44,7 @@ const step = (m: string) => console.log(`  ✓ ${m}`);
 async function main() {
   let server: ReturnType<typeof spawn> | null = null;
   if (!process.env.BASE_URL) {
-    server = spawn('node', ['dist-server/index.mjs'], { env: { ...process.env, PORT: String(PORT), ALLOW_TEST_CLOCK: '1', GOOGLE_PLACES_API_KEY: '', GEMINI_API_KEY: '', NODE_ENV: 'production' }, stdio: 'ignore' });
+    server = spawn('node', ['dist-server/index.mjs'], { env: { ...process.env, PORT: String(PORT), ALLOW_TEST_CLOCK: '1', GOOGLE_PLACES_API_KEY: '', GEMINI_API_KEY: '', NODE_ENV: 'production', VAPID_PUBLIC_KEY: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM', VAPID_PRIVATE_KEY: 'e2e-not-used' }, stdio: 'ignore' });
   }
   try {
     await waitForServer();
@@ -196,6 +196,71 @@ async function main() {
     assert.ok((await names(page)).length >= 3, 'tomorrow gets a full 3–4 block plan');
     step('late evening → "Plan tomorrow" builds a full plan for tomorrow');
     await page.evaluate(() => localStorage.setItem('planb_test_clock', '14:00'));
+
+    // ---- Safety: trusted contact, live share, viewer page, check-in, stop
+    await page.goto(`${BASE}/today`);
+    await page.getByRole('button', { name: 'Safety', exact: true }).click();
+    const safety = page.getByRole('dialog', { name: 'Safety' });
+    await safety.waitFor();
+    await safety.getByLabel('Name').fill('Asha');
+    await safety.getByLabel(/Phone/).fill('+91 98765 43210');
+    await safety.getByRole('button', { name: 'Save contact' }).click();
+    await safety.getByRole('button', { name: 'Share my day live' }).click();
+    await safety.getByText('Sharing is on').first().waitFor();
+    await axeAudit(page, 'safety sheet');
+    const shareToken = await page.evaluate(() => JSON.parse(localStorage.getItem('planb_share')!).token as string);
+    const writeKey = await page.evaluate(() => JSON.parse(localStorage.getItem('planb_share')!).writeKey as string);
+    const viewer = await context.newPage();
+    await viewer.goto(`${BASE}/s/${shareToken}`);
+    await viewer.getByText('Shared with you').waitFor();
+    await viewer.getByText(/Waiting for their first location update/).waitFor();
+    assert.ok((await viewer.locator('ol > li').count()) >= 1, 'viewer lists the plan');
+    assert.equal(await viewer.locator('meta[name=robots]').count() + (await (await fetch(`${BASE}/s/${shareToken}`)).headers.get('x-robots-tag') ? 1 : 0) > 0, true, 'share page is noindex');
+    await axeAudit(viewer, 'shared viewer');
+    await page.evaluate(async ([t, k]) => { await fetch('/api/share/location', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: t, writeKey: k, lat: 26.9239, lng: 75.8267 }) }); }, [shareToken, writeKey]);
+    await safety.getByRole('button', { name: /back safe/ }).click();
+    await safety.getByText(/Checked in/).waitFor();
+    await viewer.reload();
+    await viewer.getByText(/Checked in safe/).waitFor();
+    await viewer.getByText(/Last seen/).waitFor();
+    await viewer.getByRole('link', { name: /Open in Google Maps/ }).waitFor();
+    step('safety: share link works for a contact, shows check-in and last location, and carries no write key');
+    await safety.getByRole('button', { name: 'Stop sharing' }).click();
+    await safety.getByRole('button', { name: 'Share my day live' }).waitFor();
+    await viewer.reload();
+    await viewer.getByText(/ended or the link is not valid/).waitFor();
+    await viewer.close();
+    step('safety: stopping a share ends the link immediately');
+    await page.keyboard.press('Escape');
+
+    // ---- Recap: notes + shareable page
+    await page.goto(`${BASE}/today`);
+    await page.getByRole('button', { name: 'Day recap' }).click();
+    await page.getByRole('heading', { name: /Your day/ }).waitFor();
+    await page.locator('textarea').first().fill('Best masala chai of the trip');
+    await axeAudit(page, 'recap');
+    await page.getByRole('button', { name: 'Create share link' }).click();
+    await page.getByRole('button', { name: 'Delete shared link' }).waitFor();
+    const recapToken = await page.evaluate(() => JSON.parse(localStorage.getItem('planb_recap')!).token as string);
+    const rv = await context.newPage();
+    await rv.goto(`${BASE}/r/${recapToken}`);
+    await rv.getByText(/Best masala chai of the trip/).waitFor();
+    await axeAudit(rv, 'recap viewer');
+    await rv.close();
+    await page.getByRole('button', { name: 'Delete shared link' }).click();
+    await page.getByRole('button', { name: 'Create share link' }).waitFor();
+    step('recap: note saved, shareable page renders it, deleting the link works');
+
+    // ---- Install + reminders card
+    await page.goto(`${BASE}/today`);
+    await page.waitForSelector('article[aria-label^="Stop"]');
+    await page.evaluate(() => { const e: any = new Event('beforeinstallprompt'); e.prompt = async () => undefined; e.userChoice = Promise.resolve({ outcome: 'dismissed' }); window.dispatchEvent(e); });
+    await page.getByText('Add PlanB to your home screen').waitFor();
+    await page.getByRole('button', { name: 'Turn on reminders' }).waitFor();
+    await axeAudit(page, 'install card');
+    await page.getByRole('button', { name: 'Not now' }).click();
+    assert.equal(await page.getByText('Add PlanB to your home screen').count(), 0, 'dismissed card stays hidden');
+    step('install card appears once, offers reminders, and can be dismissed');
 
     // ---- Map Explorer (zero-config: curated fallback)
     await page.goto(`${BASE}/map`);

@@ -44,7 +44,7 @@ export const BottomSheet: React.FC<SheetProps> = ({ title, subtitle, onClose, ch
   const titleId = React.useId();
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-obsidian-deep/40 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-obsidian-deep/40 backdrop-blur-xs animate-fade-in"
       onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
@@ -53,7 +53,7 @@ export const BottomSheet: React.FC<SheetProps> = ({ title, subtitle, onClose, ch
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="w-full max-w-md bg-white/90 backdrop-blur-2xl rounded-t-4xl shadow-[0_-16px_40px_rgba(0,0,0,0.08)] px-5 pt-3.5 pb-8 flex flex-col max-h-[92vh] overflow-y-auto animate-slide-up border-t border-white/80 outline-none"
+        className="w-full max-w-md bg-white/90 backdrop-blur-2xl rounded-t-4xl shadow-[0_-16px_40px_rgba(0,0,0,0.08)] px-5 pt-3.5 pb-8 flex flex-col max-h-[92vh] overflow-y-auto animate-slide-up border-t border-white/80 outline-hidden"
       >
         <div className="w-full flex justify-center pb-3" aria-hidden="true">
           <div className="w-12 h-1.5 bg-card-border rounded-full" />
@@ -161,7 +161,7 @@ export function RadioGroup<T extends string>({ label, value, options, onChange, 
               </span>
             </span>
             <span aria-hidden="true" className={`w-5 h-5 mt-0.5 rounded-full flex items-center justify-center shrink-0 ${sel ? 'bg-chartreuse text-obsidian' : 'bg-white/60 text-transparent'}`}>
-              <Check className="w-3 h-3 stroke-[3]" />
+              <Check className="w-3 h-3 stroke-3" />
             </span>
           </button>
         );
@@ -176,7 +176,7 @@ export const PrimaryButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElemen
   <button
     type="button"
     {...rest}
-    className={`min-h-[48px] rounded-2xl bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-xl border border-white/60 text-obsidian font-extrabold text-sm flex items-center justify-center gap-2 shadow-glass-cta active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+    className={`min-h-[48px] rounded-2xl bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-xl border border-white/60 text-obsidian font-extrabold text-sm flex items-center justify-center gap-2 shadow-glass-cta active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
   >
     {children}
   </button>
@@ -186,7 +186,7 @@ export const GlassButton: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement>
   <button
     type="button"
     {...rest}
-    className={`min-h-[44px] rounded-2xl bg-white/70 backdrop-blur-xl border border-white/80 text-obsidian font-bold text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+    className={`min-h-[44px] rounded-2xl bg-white/70 backdrop-blur-xl border border-white/80 text-obsidian font-bold text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-xs hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
   >
     {children}
   </button>
@@ -219,7 +219,7 @@ export const VenueImage: React.FC<{ src?: string; placeId?: string; className?: 
 
   const url = src || live?.url;
   const placeholder = (
-    <div className={`flex flex-col items-center justify-center bg-gradient-to-br from-recessed to-recessed-dark text-spruce/70 ${className}`}>
+    <div className={`flex flex-col items-center justify-center bg-linear-to-br from-recessed to-recessed-dark text-spruce/70 ${className}`}>
       <MapPin className="w-5 h-5" aria-hidden="true" />
       {isGoogle && !requested && (
         <button type="button" onClick={() => setRequested(true)} className="mt-1 min-h-[24px] px-2 rounded-full bg-white/80 text-[10px] font-bold text-obsidian">Show photo</button>

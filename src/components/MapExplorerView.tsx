@@ -130,7 +130,7 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
 
       {/* Pins */}
       {showDrawn && <div className="absolute inset-0 z-10 pointer-events-none">
-        <span className="absolute w-4 h-4 rounded-full bg-sky-600 border-2 border-white shadow" style={{ left: `${pins.me.x}%`, top: `${pins.me.y}%`, transform: 'translate(-50%,-50%)' }} aria-hidden="true" />
+        <span className="absolute w-4 h-4 rounded-full bg-sky-600 border-2 border-white shadow-sm" style={{ left: `${pins.me.x}%`, top: `${pins.me.y}%`, transform: 'translate(-50%,-50%)' }} aria-hidden="true" />
         {pins.items.map(({ p, x, y }, i) => (
           <button key={p.id} type="button" onClick={() => openDetails(p)} aria-label={`${i + 1}, ${p.name}, ${p.rating} stars`}
             className="absolute pointer-events-auto w-11 h-11 flex items-center justify-center" style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%,-50%)' }}>

@@ -60,7 +60,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
             'w-11 h-11'
           } ${
             activeTab === 'calibrate'
-              ? 'bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian shadow-[0_4px_14px_rgba(184,238,48,0.4)] ring-2 ring-chartreuse/40'
+              ? 'bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian shadow-[0_4px_14px_rgba(184,238,48,0.4)] ring-2 ring-chartreuse/40'
               : 'text-olive-slate hover:text-obsidian hover:bg-white/60'
           }`}
         >
@@ -78,7 +78,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
             'w-11 h-11'
           } ${
             activeTab === 'today'
-              ? 'bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian shadow-[0_4px_14px_rgba(184,238,48,0.4)] ring-2 ring-chartreuse/40'
+              ? 'bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian shadow-[0_4px_14px_rgba(184,238,48,0.4)] ring-2 ring-chartreuse/40'
               : 'text-olive-slate hover:text-obsidian hover:bg-white/60'
           }`}
         >
@@ -115,7 +115,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
           aria-current={activeTab === 'map' ? 'page' : undefined}
           className={`flex items-center justify-center rounded-full transition-all duration-200 active:scale-95 w-11 h-11 ${
             activeTab === 'map'
-              ? 'bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 border border-white/60 text-obsidian ring-2 ring-chartreuse/40'
+              ? 'bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 border border-white/60 text-obsidian ring-2 ring-chartreuse/40'
               : 'text-olive-slate hover:text-obsidian hover:bg-white/60'
           }`}
         >
@@ -133,7 +133,7 @@ export const NavigationDock: React.FC<NavigationDockProps> = ({
             'w-11 h-11'
           } ${
             activeTab === 'explore'
-              ? 'bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian shadow-[0_4px_14px_rgba(184,238,48,0.4)] ring-2 ring-chartreuse/40'
+              ? 'bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian shadow-[0_4px_14px_rgba(184,238,48,0.4)] ring-2 ring-chartreuse/40'
               : 'text-olive-slate hover:text-obsidian hover:bg-white/60'
           }`}
         >

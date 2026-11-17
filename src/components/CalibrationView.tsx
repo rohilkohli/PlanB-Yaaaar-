@@ -170,7 +170,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
         <button
           type="button"
           onClick={onOpenGuardrails}
-          className="w-11 h-11 rounded-full bg-white/75 backdrop-blur-xl border border-white/80 flex items-center justify-center text-obsidian hover:bg-white/90 active:scale-95 transition-all shadow-sm"
+          className="w-11 h-11 rounded-full bg-white/75 backdrop-blur-xl border border-white/80 flex items-center justify-center text-obsidian hover:bg-white/90 active:scale-95 transition-all shadow-xs"
           aria-label={t('calib.prefs')}
         >
           <Sliders className="w-4 h-4" />
@@ -200,7 +200,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
 
       {step === 1 && (
         <section className="flex-1 flex flex-col animate-fade-in" aria-labelledby="q1">
-          <h1 id="q1" ref={headingRef} tabIndex={-1} className="font-bold text-xl text-obsidian leading-snug tracking-tight mb-4 outline-none">
+          <h1 id="q1" ref={headingRef} tabIndex={-1} className="font-bold text-xl text-obsidian leading-snug tracking-tight mb-4 outline-hidden">
             {t('calib.where')}
           </h1>
 
@@ -220,7 +220,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
               aria-describedby={shown ? 'city-error' : undefined}
               aria-autocomplete="list"
               aria-controls={suggestions.length > 0 ? 'city-suggestions' : undefined}
-              className={`w-full min-h-[48px] pl-10 pr-3.5 rounded-2xl bg-white/80 backdrop-blur-xl border text-sm text-obsidian placeholder-olive-slate/70 focus:outline-none focus:ring-2 focus:ring-chartreuse shadow-glass-card ${shown ? 'border-red-600' : 'border-white/80'}`}
+              className={`w-full min-h-[48px] pl-10 pr-3.5 rounded-2xl bg-white/80 backdrop-blur-xl border text-sm text-obsidian placeholder-olive-slate/70 focus:outline-hidden focus:ring-2 focus:ring-chartreuse shadow-glass-card ${shown ? 'border-red-600' : 'border-white/80'}`}
             />
             {suggestions.length > 0 && (
               <ul id="city-suggestions" role="listbox" aria-label="Suggestions" className="absolute z-30 left-0 right-0 mt-1 rounded-2xl bg-white/95 backdrop-blur-xl border border-card-border shadow-float overflow-hidden">
@@ -282,7 +282,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
                     type="time"
                     value={f.value}
                     onChange={e => { touched(); timesTouched.current = true; f.set(e.target.value || f.value); }}
-                    className="mt-1 w-full min-h-[48px] px-3 rounded-2xl bg-white/80 border border-white/80 text-sm font-semibold text-obsidian focus:outline-none focus:ring-2 focus:ring-chartreuse shadow-glass-card"
+                    className="mt-1 w-full min-h-[48px] px-3 rounded-2xl bg-white/80 border border-white/80 text-sm font-semibold text-obsidian focus:outline-hidden focus:ring-2 focus:ring-chartreuse shadow-glass-card"
                   />
                 </label>
               ))}
@@ -322,7 +322,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
 
       {step === 2 && (
         <section className="flex-1 flex flex-col animate-fade-in" aria-labelledby="q2">
-          <h1 id="q2" ref={headingRef} tabIndex={-1} className="font-bold text-xl text-obsidian leading-snug tracking-tight mb-4 outline-none">
+          <h1 id="q2" ref={headingRef} tabIndex={-1} className="font-bold text-xl text-obsidian leading-snug tracking-tight mb-4 outline-hidden">
             {t('calib.pace')}
           </h1>
           <RadioGroup
@@ -357,7 +357,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
       {step === 3 && (
         <section className="flex-1 flex flex-col animate-fade-in" aria-labelledby="q3">
           <div className="mb-4">
-            <h1 id="q3" ref={headingRef} tabIndex={-1} className="font-bold text-xl text-obsidian leading-snug tracking-tight outline-none">{t('calib.evening')}</h1>
+            <h1 id="q3" ref={headingRef} tabIndex={-1} className="font-bold text-xl text-obsidian leading-snug tracking-tight outline-hidden">{t('calib.evening')}</h1>
             {city && sunset !== null && (
               <p className="text-xs text-olive-slate mt-0.5">Sunset in {city.name} is around {new Date(2000, 0, 1, Math.floor(sunset / 60), sunset % 60).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.</p>
             )}

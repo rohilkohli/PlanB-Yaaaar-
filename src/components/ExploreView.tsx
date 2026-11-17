@@ -68,7 +68,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({ onLoadCity, onBackToPl
               onClick={() => setSelectedVibe(v.id)}
               className={`shrink-0 h-8 px-3.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 ${
                 isActive
-                  ? 'bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 text-obsidian font-bold shadow-xs border border-white/60 ring-1 ring-chartreuse/50'
+                  ? 'bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 text-obsidian font-bold shadow-2xs border border-white/60 ring-1 ring-chartreuse/50'
                   : 'bg-white/70 backdrop-blur-md text-olive-slate border border-white/80 hover:bg-white/90 shadow-2xs'
               }`}
             >
@@ -90,10 +90,10 @@ export const ExploreView: React.FC<ExploreViewProps> = ({ onLoadCity, onBackToPl
           >
             <div className="relative h-44 w-full overflow-hidden">
               <img src={city.heroImage} alt="" className="w-full h-full object-cover" loading="lazy" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/25 to-transparent" />
               
               <div className="absolute top-3 right-3">
-                <span className="px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1 border border-white/30 shadow-xs">
+                <span className="px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1 border border-white/30 shadow-2xs">
                   <Sun className="w-3 h-3 text-chartreuse" />
                   <span>Sunset {minutesToTimeString(sunsetFor(city, today))}</span>
                 </span>
@@ -134,7 +134,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({ onLoadCity, onBackToPl
                 <button
                   type="button"
                   onClick={() => onLoadCity(city)}
-                  className="min-h-[44px] px-4 rounded-full bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold flex items-center gap-1.5 shadow-glass-cta active:scale-95 transition-transform hover:shadow-[0_6px_20px_rgba(184,238,48,0.4)]"
+                  className="min-h-[44px] px-4 rounded-full bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold flex items-center gap-1.5 shadow-glass-cta active:scale-95 transition-transform hover:shadow-[0_6px_20px_rgba(184,238,48,0.4)]"
                 >
                   <span>Start in {city.name}</span>
                   <ArrowRight className="w-3.5 h-3.5" />

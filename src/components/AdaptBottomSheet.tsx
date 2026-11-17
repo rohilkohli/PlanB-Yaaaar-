@@ -68,7 +68,7 @@ export const AdaptBottomSheet: React.FC<Props> = ({ currentPlan, isOffline, busy
               disabled={isOffline}
               onClick={() => toggle(s.id)}
               className={`min-h-[52px] px-3 py-2 rounded-2xl transition-all text-left active:scale-[0.98] flex items-center gap-2 disabled:opacity-50 ${
-                on ? 'bg-obsidian text-white shadow-sm' : 'bg-white/80 text-obsidian border border-white/80 hover:bg-white shadow-2xs'
+                on ? 'bg-obsidian text-white shadow-xs' : 'bg-white/80 text-obsidian border border-white/80 hover:bg-white shadow-2xs'
               }`}
             >
               <Icon className={`w-4 h-4 shrink-0 ${on ? 'text-chartreuse' : 'text-spruce'}`} aria-hidden="true" />
@@ -103,12 +103,12 @@ export const AdaptBottomSheet: React.FC<Props> = ({ currentPlan, isOffline, busy
           id="adapt-note" type="text" maxLength={140} value={note} disabled={isOffline}
           onChange={e => setNote(e.target.value)}
           placeholder="Optional note (e.g. a coffee craving)"
-          className="w-full min-h-[48px] pl-9 pr-3.5 rounded-2xl bg-white/80 border border-white/80 text-sm text-obsidian placeholder-olive-slate/70 focus:outline-none focus:ring-2 focus:ring-chartreuse shadow-2xs"
+          className="w-full min-h-[48px] pl-9 pr-3.5 rounded-2xl bg-white/80 border border-white/80 text-sm text-obsidian placeholder-olive-slate/70 focus:outline-hidden focus:ring-2 focus:ring-chartreuse shadow-2xs"
         />
       </div>
 
       <label className="mb-4 min-h-[44px] flex items-center gap-2.5 text-xs text-olive-slate">
-        <input type="checkbox" checked={useLocation} disabled={isOffline} onChange={e => setUseLocation(e.target.checked)} className="w-5 h-5 accent-[#4C6700]" />
+        <input type="checkbox" checked={useLocation} disabled={isOffline} onChange={e => setUseLocation(e.target.checked)} className="w-5 h-5 accent-spruce" />
         <span>Use my current location for this update (once, not stored)</span>
       </label>
 

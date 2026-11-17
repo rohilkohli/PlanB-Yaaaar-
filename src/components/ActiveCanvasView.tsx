@@ -120,7 +120,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           <button
             type="button"
             onClick={() => onNewDay()}
-            className="min-h-[44px] px-3.5 rounded-full bg-white/75 backdrop-blur-xl border border-white/80 text-xs font-bold text-obsidian hover:bg-white/90 active:scale-95 transition-all shadow-sm"
+            className="min-h-[44px] px-3.5 rounded-full bg-white/75 backdrop-blur-xl border border-white/80 text-xs font-bold text-obsidian hover:bg-white/90 active:scale-95 transition-all shadow-xs"
           >
             {t('today.newDay')}
           </button>
@@ -128,7 +128,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           <button
             type="button"
             onClick={onOpenGuardrails}
-            className="w-11 h-11 rounded-full bg-white/75 backdrop-blur-xl border border-white/80 flex items-center justify-center text-obsidian hover:bg-white/90 active:scale-95 transition-all shadow-sm"
+            className="w-11 h-11 rounded-full bg-white/75 backdrop-blur-xl border border-white/80 flex items-center justify-center text-obsidian hover:bg-white/90 active:scale-95 transition-all shadow-xs"
             title="Preferences"
             aria-label="Preferences and guardrails"
           >
@@ -231,7 +231,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           onClick={() => setViewMode('timeline')}
           className={`flex-1 min-h-[44px] py-1.5 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
             viewMode === 'timeline'
-              ? 'bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 text-obsidian shadow-xs border border-white/50'
+              ? 'bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 text-obsidian shadow-2xs border border-white/50'
               : 'text-olive-slate hover:text-obsidian'
           }`}
         >
@@ -243,7 +243,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           onClick={() => setViewMode('map')}
           className={`flex-1 min-h-[44px] py-1.5 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
             viewMode === 'map'
-              ? 'bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 text-obsidian shadow-xs border border-white/50'
+              ? 'bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 text-obsidian shadow-2xs border border-white/50'
               : 'text-olive-slate hover:text-obsidian'
           }`}
         >
@@ -264,7 +264,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                 onClick={() => setFilter(tab)}
                 className={`shrink-0 min-h-[44px] px-4 rounded-full text-xs font-semibold capitalize transition-all ${
                   filter === tab
-                    ? 'bg-chartreuse text-obsidian shadow-sm border border-white/60'
+                    ? 'bg-chartreuse text-obsidian shadow-xs border border-white/60'
                     : 'bg-white/70 backdrop-blur-md text-olive-slate border border-white/80 hover:bg-white/90'
                 }`}
               >
@@ -296,11 +296,11 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                   >
                     {/* Diff highlight tag if adapted or Up Next */}
                     {block.isAdapted ? (
-                      <div className="absolute -top-2.5 right-4 bg-chartreuse text-obsidian text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm border border-white/40">
+                      <div className="absolute -top-2.5 right-4 bg-chartreuse text-obsidian text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs border border-white/40">
                         {block.adaptationReason || 'Updated'}
                       </div>
                     ) : isNextUp ? (
-                      <div className="absolute -top-2.5 right-4 bg-chartreuse text-obsidian text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-sm border border-white/40">
+                      <div className="absolute -top-2.5 right-4 bg-chartreuse text-obsidian text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-xs border border-white/40">
                         {t('card.upNext')}
                       </div>
                     ) : null}
@@ -334,7 +334,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                           aria-expanded={openTipBlockIds.has(block.blockId)}
                           className={`w-11 h-11 -my-2.5 -mr-1.5 rounded-full flex items-center justify-center transition-all ${
                             openTipBlockIds.has(block.blockId)
-                              ? 'bg-chartreuse text-obsidian shadow-xs ring-1 ring-chartreuse/60'
+                              ? 'bg-chartreuse text-obsidian shadow-2xs ring-1 ring-chartreuse/60'
                               : 'bg-white/70 backdrop-blur-xs text-olive-slate hover:text-obsidian border border-white/80 shadow-2xs'
                           }`}
                         >
@@ -364,15 +364,15 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                         )}
                       </div>
 
-                      <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-white/60 border border-white/70 shadow-xs shrink-0">
+                      <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-white/60 border border-white/70 shadow-2xs shrink-0">
                         <VenueImage
                           src={block.venue.imageUrl}
                           placeId={block.venue.placeId}
                           autoLoad={isNextUp}
-                          className={`w-full h-full object-cover ${isDone ? 'grayscale-[60%]' : ''}`}
+                          className={`w-full h-full object-cover ${isDone ? 'grayscale-60' : ''}`}
                         />
                         {block.venue.rating > 0 && (
-                          <span className="absolute top-1 right-1 bg-obsidian/85 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-sm shadow-xs">
+                          <span className="absolute top-1 right-1 bg-obsidian/85 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-xs shadow-2xs">
                             ★ {block.venue.rating}
                           </span>
                         )}
@@ -398,7 +398,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                         rel="noopener noreferrer"
                         onClick={() => onMapsClick(block)}
                         aria-label={`Open ${vName(block.venue)} in Maps`}
-                        className="min-h-[44px] rounded-full bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-transform shadow-[0_4px_14px_rgba(184,238,48,0.35)] hover:shadow-[0_6px_18px_rgba(184,238,48,0.45)]"
+                        className="min-h-[44px] rounded-full bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-transform shadow-[0_4px_14px_rgba(184,238,48,0.35)] hover:shadow-[0_6px_18px_rgba(184,238,48,0.45)]"
                       >
                         <span>Maps</span>
                         <ExternalLink className="w-3 h-3" />
@@ -423,7 +423,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                         aria-label={isDone ? `Done, ${vName(block.venue)}` : `Mark done, ${vName(block.venue)}`}
                         className={`min-h-[44px] rounded-full text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition-transform ${
                           isDone
-                            ? 'bg-spruce text-white shadow-sm'
+                            ? 'bg-spruce text-white shadow-xs'
                             : 'bg-white/70 backdrop-blur-md text-olive-slate border border-white/80 hover:bg-white/90 shadow-2xs'
                         }`}
                       >
@@ -498,7 +498,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
             <button
               type="button"
               onClick={onOpenAdapt}
-              className="min-h-[44px] px-4 rounded-full bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold shrink-0 active:scale-95 transition-transform shadow-[0_4px_14px_rgba(184,238,48,0.35)] hover:shadow-[0_6px_18px_rgba(184,238,48,0.45)]"
+              className="min-h-[44px] px-4 rounded-full bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold shrink-0 active:scale-95 transition-transform shadow-[0_4px_14px_rgba(184,238,48,0.35)] hover:shadow-[0_6px_18px_rgba(184,238,48,0.45)]"
             >
               {t('today.adjust')}
             </button>
@@ -518,7 +518,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
       {viewMode === 'map' && (
         <section className="flex-1 flex flex-col space-y-3.5 animate-fade-in">
           {/* Stylized Visual Map Canvas */}
-          <div className="relative w-full h-84 rounded-3xl overflow-hidden bg-[#F2F5EB] border border-white/80 shadow-glass-card select-none">
+          <div className="relative w-full h-84 rounded-3xl overflow-hidden bg-recessed border border-white/80 shadow-glass-card select-none">
             {/* Background Map Grid & Vector Art */}
             <svg className="absolute inset-0 w-full h-full object-cover" viewBox="0 0 380 340" fill="none">
               <defs>
@@ -582,7 +582,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                 strokeWidth="5"
                 strokeDasharray="6 4"
                 strokeLinecap="round"
-                className="drop-shadow-sm"
+                className="drop-shadow-xs"
               />
 
               {/* Directional Chevrons */}
@@ -626,7 +626,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                     <span>{isDone ? '✓' : `0${b.sequence}`}</span>
                   </div>
 
-                  <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-obsidian/80 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-xs pointer-events-none">
+                  <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-obsidian/80 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-2xs pointer-events-none">
                     {b.venue.neighborhood}
                   </span>
                 </div>
@@ -670,7 +670,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                   onClick={() => onMapsClick(selectedMapBlock)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="h-9 rounded-full bg-gradient-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold flex items-center justify-center gap-1 shadow-glass-cta active:scale-95 transition-all"
+                  className="h-9 rounded-full bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold flex items-center justify-center gap-1 shadow-glass-cta active:scale-95 transition-all"
                 >
                   <span>Maps</span>
                   <ExternalLink className="w-3 h-3" />

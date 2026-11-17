@@ -130,7 +130,7 @@ export const GuardrailsModal: React.FC<Props> = ({ preferences, lang, onLangChan
           <button type="button" role="switch" aria-checked={isSimulatedOffline} aria-labelledby="sim-off" onClick={onToggleSimulateOffline}
             className="w-14 h-11 flex items-center justify-center shrink-0">
             <span className={`w-11 h-6 rounded-full relative p-0.5 transition-colors ${isSimulatedOffline ? 'bg-chartreuse' : 'bg-card-border'}`}>
-              <span className={`block w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${isSimulatedOffline ? 'translate-x-5' : ''}`} />
+              <span className={`block w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${isSimulatedOffline ? 'translate-x-5' : ''}`} />
             </span>
           </button>
         </div>

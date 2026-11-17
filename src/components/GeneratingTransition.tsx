@@ -22,7 +22,7 @@ export const GeneratingTransition: React.FC<Props> = ({ cityName, onCancel, isQu
   }, [isQuickDemo]);
 
   return (
-    <div ref={ref} role="dialog" aria-modal="true" aria-label="Building your day" tabIndex={-1} className="fixed inset-0 z-50 bg-canvas flex flex-col px-6 pt-safe pb-safe animate-fade-in outline-none">
+    <div ref={ref} role="dialog" aria-modal="true" aria-label="Building your day" tabIndex={-1} className="fixed inset-0 z-50 bg-canvas flex flex-col px-6 pt-safe pb-safe animate-fade-in outline-hidden">
       <div className="flex items-center justify-between py-2">
         <span className="font-extrabold text-base text-obsidian tracking-tight">PlanB</span>
         <button type="button" onClick={onCancel} aria-label="Cancel" className="w-11 h-11 rounded-full bg-white border border-card-border flex items-center justify-center text-obsidian hover:bg-recessed active:scale-90">

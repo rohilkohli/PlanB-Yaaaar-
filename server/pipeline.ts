@@ -13,6 +13,8 @@ import {
 } from '../src/core/planner';
 import { addDays, localNow, timeStringToMinutes } from '../src/core/time';
 import { cached, reserveCalls } from './budget';
+import { fetchLegs } from './routes';
+import { retimePlan } from '../src/core/retime';
 import { signPlan, verifyPlan } from './sign';
 import { truncateCoords } from '../src/core/geo';
 import type { CityData, Coordinates, DayPlan, TravelerPreferences, VerifiedVenue } from '../src/types/itinerary';
@@ -147,6 +149,17 @@ export function sanitizeClock(v: any): { minutes: number; date: string } | undef
   return undefined;
 }
 
+/** Replace straight-line leg estimates with real Routes API times (order unchanged; see src/core/retime.ts). */
+async function refineTravel(plan: DayPlan, sunsetMinutes: number): Promise<DayPlan> {
+  if (!env().placesKey || plan.blocks.length < 2) return plan;
+  try {
+    const legs = await fetchLegs(plan.blocks.map(b => b.venue.coords), plan.guardrails.maxStrideMinutes);
+    const r = retimePlan(plan, legs, sunsetMinutes);
+    if (r.moved || r.dropped) logEvent('plan_retimed', { moved: r.moved, dropped: r.dropped, legs: legs.filter(Boolean).length });
+    return r.plan;
+  } catch { return plan; }
+}
+
 /* ------------------------------------------------------------------ generate */
 
 export async function generate(body: any): Promise<{ plan: DayPlan; meta: PlanMeta }> {
@@ -180,7 +193,7 @@ export async function generate(body: any): Promise<{ plan: DayPlan; meta: PlanMe
     else reason = out.reason;
   } else { reason = 'no_window'; }
 
-  const plan = generatePlan(calibration, prefs, ctx, hints);
+  const plan = await refineTravel(generatePlan(calibration, prefs, ctx, hints), sunsetMinutes);
   plan.usedFallback = usedFallback;
   plan.signature = signPlan(plan);
   return { plan, meta: { usedFallback, fallbackReason: reason, llm, source, latencyMs: Date.now() - started } };
@@ -262,7 +275,7 @@ export async function adapt(body: any): Promise<{ plan: DayPlan; meta: PlanMeta 
   } else reason = 'deterministic_scenario';
 
   const social = body?.socialShift === 'livelier' ? 'livelier' : 'quieter';
-  const out = adaptPlan(plan, { scenarios, note, currentCoords, socialShift: social, hints }, ctx);
+  const out = await refineTravel(adaptPlan(plan, { scenarios, note, currentCoords, socialShift: social, hints }, ctx), sunsetMinutes);
   out.usedFallback = usedFallback;
   out.signature = signPlan(out);
   return { plan: out, meta: { usedFallback, fallbackReason: reason, llm, source, latencyMs: Date.now() - started } };

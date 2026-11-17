@@ -11,7 +11,7 @@ export async function nodeApi(req: IncomingMessage, res: ServerResponse): Promis
   let out: ApiResponse;
   try {
     body = await readBody(req);
-    out = await handle({ method: req.method || 'GET', path: url.pathname.replace(/\/$/, ''), query: url.searchParams, body, ip: clientIp(req) });
+    out = await handle({ method: req.method || 'GET', path: url.pathname.replace(/\/$/, ''), query: url.searchParams, body, ip: clientIp(req), headers: { 'x-cron-token': req.headers['x-cron-token'] as string | undefined } });
   } catch (err) {
     const status = (err as { status?: number })?.status ?? 500;
     out = { status, body: { error: (err as Error).message } };

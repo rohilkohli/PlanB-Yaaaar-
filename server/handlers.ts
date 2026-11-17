@@ -6,6 +6,8 @@ import { autocomplete, reverseGeocode } from './places';
 import { CITIES } from '../src/data/placesData';
 import { fetchWeather } from './weather';
 import { recordEvent } from './events';
+import { createShare, postLocation, postStatus, readShare, stopShare } from './share';
+import { cronAuthorized, dispatchDue, pushEnabled, subscribe, unsubscribe, vapidPublicKey } from './push';
 import { discover, placeDetails, placePhoto, placePhotoRefs, placeSummary, DISCOVER_CATEGORIES, type DiscoverCategory } from './discover';
 
 async function limited(req: ApiRequest, bucket: string, limit: number): Promise<ApiResponse | null> {
@@ -29,7 +31,9 @@ export async function handle(req: ApiRequest): Promise<ApiResponse> {
           mapsKey: process.env.GOOGLE_MAPS_BROWSER_KEY || null,
           contactEmail: process.env.CONTACT_EMAIL || null,
           // false (default) = Places content is never stored on the device (Google Places policy); true only after counsel's OK
-          placesOfflineStorage: process.env.PLACES_OFFLINE_STORAGE === 'allow'
+          placesOfflineStorage: process.env.PLACES_OFFLINE_STORAGE === 'allow',
+          // Web Push (reminders). null = the feature is hidden in the app.
+          vapidPublicKey: pushEnabled() ? vapidPublicKey() : null
         });
       case 'GET /api/health':
         return json(200, { ok: true, mode: { places: !!e.placesKey, llm: !!e.geminiKey && !e.deterministicOnly, deterministicOnly: e.deterministicOnly } });
@@ -98,6 +102,48 @@ export async function handle(req: ApiRequest): Promise<ApiResponse> {
         const img = await placePhoto(name, Number(req.query.get('w')) || 800);
         if (!img) return json(404, { error: 'no_photo' });
         return { status: 200, body: Buffer.from(img.bytes), headers: { 'Content-Type': img.type, 'Cache-Control': 'private, no-store' } };
+      }
+      case 'POST /api/share': {
+        const lim = await limited(req, 'sharenew', 8); if (lim) return lim;
+        const out = await createShare('share', (req.body as any)?.plan);
+        logEvent('share_created', { kind: 'share' });
+        return json(200, out);
+      }
+      case 'POST /api/share/location': {
+        const lim = await limited(req, 'shareloc', 2500); if (lim) return lim;
+        return json(200, await postLocation(req.body));
+      }
+      case 'POST /api/share/status': {
+        const lim = await limited(req, 'sharestatus', 200); if (lim) return lim;
+        return json(200, await postStatus(req.body));
+      }
+      case 'POST /api/share/stop': return json(200, await stopShare('share', req.body));
+      case 'GET /api/share/view': {
+        const lim = await limited(req, 'shareview', 3000); if (lim) return lim;
+        return json(200, await readShare('share', req.query.get('t') || ''), { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' });
+      }
+      case 'POST /api/recap': {
+        const lim = await limited(req, 'recapnew', 12); if (lim) return lim;
+        const b = req.body as any;
+        const out = await createShare('recap', b?.plan, b?.notes && typeof b.notes === 'object' ? b.notes : {});
+        logEvent('share_created', { kind: 'recap' });
+        return json(200, out);
+      }
+      case 'POST /api/recap/stop': return json(200, await stopShare('recap', req.body));
+      case 'GET /api/recap/view': {
+        const lim = await limited(req, 'recapview', 1000); if (lim) return lim;
+        return json(200, await readShare('recap', req.query.get('t') || ''), { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' });
+      }
+      case 'POST /api/push/subscribe': {
+        const lim = await limited(req, 'pushsub', 30); if (lim) return lim;
+        return json(200, await subscribe(req.body));
+      }
+      case 'POST /api/push/unsubscribe': return json(200, await unsubscribe(req.body));
+      case 'POST /api/push/dispatch': {
+        if (!cronAuthorized(req.headers?.['x-cron-token'])) return json(403, { error: 'forbidden' });
+        const out = await dispatchDue();
+        if (out.due) logEvent('push_dispatched', out);
+        return json(200, out);
       }
       case 'POST /api/csp-report': {
         const lim = await limited(req, 'csp', 60); if (lim) return lim;

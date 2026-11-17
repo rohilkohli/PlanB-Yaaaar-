@@ -266,13 +266,16 @@ describe('Places cost guards', () => {
   }));
   const stub = () => vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ places: live }) }) as any));
 
+  // Routes API legs are separate paid calls; these tests are about Places content only.
+  const placesCalls = () => (globalThis.fetch as any).mock.calls.filter((c: any[]) => String(c[0]).includes('places.googleapis.com')).length;
+
   it('does NOT cache Places content by default (Google Places policy)', async () => {
     process.env.GOOGLE_PLACES_API_KEY = 'k';
     stub();
     await handle(req('POST', '/api/plan/generate', { calibration: CAL, now: NOW }));
-    expect((globalThis.fetch as any).mock.calls.length).toBe(3); // one fetch per query group
+    expect(placesCalls()).toBe(3); // one fetch per query group
     await handle(req('POST', '/api/plan/generate', { calibration: CAL, now: NOW }, '2.2.2.2'));
-    expect((globalThis.fetch as any).mock.calls.length).toBe(6); // fetched again: nothing was stored
+    expect(placesCalls()).toBe(6); // fetched again: nothing was stored
     vi.unstubAllGlobals();
   });
 
@@ -282,7 +285,7 @@ describe('Places cost guards', () => {
     stub();
     await handle(req('POST', '/api/plan/generate', { calibration: CAL, now: NOW }));
     await handle(req('POST', '/api/plan/generate', { calibration: CAL, now: NOW }, '2.2.2.2'));
-    expect((globalThis.fetch as any).mock.calls.length).toBe(3);
+    expect(placesCalls()).toBe(3);
     vi.unstubAllGlobals();
     delete process.env.PLACES_CACHE_TTL_SEC;
   });

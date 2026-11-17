@@ -5,6 +5,7 @@
  */
 import { createHash } from 'node:crypto';
 import { env } from './env';
+import { accessToken, gcpAvailable, gcpProject, resetGcpCache } from './gcp';
 
 export interface LimitResult { allowed: boolean; remaining: number; limit: number; retryAfterSec: number }
 
@@ -19,28 +20,12 @@ export function hashIp(ip: string): string {
   return createHash('sha256').update(`${ip}|${today()}|planb`).digest('hex').slice(0, 24);
 }
 
-export function resetMemoryLimits() { mem.clear(); tokenCache = null; }
+export function resetMemoryLimits() { mem.clear(); resetGcpCache(); }
 
 /* ---- Firestore (shared across instances; native to Google Cloud, no extra account) ---- */
-let tokenCache: { token: string; exp: number } | null = null;
-
-async function accessToken(): Promise<string | null> {
-  if (process.env.FIRESTORE_ACCESS_TOKEN) return process.env.FIRESTORE_ACCESS_TOKEN; // local testing only
-  if (tokenCache && tokenCache.exp > Date.now() + 30_000) return tokenCache.token;
-  try {
-    const r = await fetch('http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token', {
-      headers: { 'Metadata-Flavor': 'Google' }, signal: AbortSignal.timeout(500)
-    });
-    if (!r.ok) return null;
-    const j = (await r.json()) as { access_token: string; expires_in: number };
-    tokenCache = { token: j.access_token, exp: Date.now() + j.expires_in * 1000 };
-    return tokenCache.token;
-  } catch { return null; }
-}
-
 async function incrFirestore(key: string): Promise<number | null> {
-  const project = process.env.GOOGLE_CLOUD_PROJECT || process.env.FIRESTORE_PROJECT;
-  if (!project || !(process.env.K_SERVICE || process.env.FIRESTORE_ACCESS_TOKEN)) return null;
+  const project = gcpProject();
+  if (!project || !gcpAvailable()) return null;
   const token = await accessToken();
   if (!token) return null;
   const doc = `projects/${project}/databases/(default)/documents/ratelimits/${key.replace(/[^A-Za-z0-9_-]/g, '_')}`;

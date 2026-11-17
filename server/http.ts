@@ -6,6 +6,7 @@ export interface ApiRequest {
   query: URLSearchParams;
   body: unknown;
   ip: string;
+  headers?: Record<string, string | undefined>;
 }
 export interface ApiResponse {
   status: number;

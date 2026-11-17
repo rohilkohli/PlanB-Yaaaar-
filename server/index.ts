@@ -39,6 +39,7 @@ createServer(async (req, res) => {
   if (!file.startsWith(DIST)) { res.statusCode = 403; res.end(); return; }
   if (!existsSync(file) || statSync(file).isDirectory()) file = join(DIST, 'index.html'); // SPA fallback (/today, /preferences)
   for (const [k, v] of Object.entries(securityHeaders())) res.setHeader(k, v);
+  if (urlPath.startsWith('/s/') || urlPath.startsWith('/r/')) res.setHeader('X-Robots-Tag', 'noindex, nofollow'); // private share links stay out of search
   const ext = extname(file);
   res.setHeader('Content-Type', TYPES[ext] ?? 'application/octet-stream');
   if (file.endsWith('sw.js') || file.endsWith('index.html')) res.setHeader('Cache-Control', 'no-cache');

@@ -191,3 +191,96 @@ describe('real travel times', () => {
     expect((await fetchLegs(pts, 25)).every(l => l === null)).toBe(true);
   });
 });
+
+/* ------------------------------------------------------------------ flags, voice, trip memory, ride links */
+import { blockFlags } from '../src/core/flags';
+import { parseVoiceIntent } from '../src/core/voiceIntent';
+import { headingToMessage, rideBackUrl } from '../src/core/transport';
+import { tripStore } from '../src/services/trip';
+import { t as tr, setLang } from '../src/i18n';
+
+describe('stop flags are factual logistics, never safety claims', () => {
+  const SAFETY = /\b(well[- ]?lit|safe|safety|secure|security|risk[- ]free|no danger|guaranteed)\b/i;
+  it('flags a venue that closes soon after the visit and a stop that ends after sunset', () => {
+    const plan = makePlan();
+    const b = { ...plan.blocks[0], status: 'upcoming' as const, startMinutes: 17 * 60, endMinutes: 18 * 60 + 30, venue: { ...plan.blocks[0].venue, periods: undefined, opensAt: '09:00', closesAt: '19:00' } };
+    const flags = blockFlags({ blocks: [b], localSunsetTime: '5:45 PM' }, b);
+    expect(flags.map(f => f.id)).toEqual(['closes_soon', 'ends_after_sunset', 'ride_back']);
+  });
+  it('says nothing for finished stops or an early afternoon stop with long opening hours', () => {
+    const plan = makePlan();
+    const early = { ...plan.blocks[0], status: 'upcoming' as const, startMinutes: 11 * 60, endMinutes: 12 * 60, venue: { ...plan.blocks[0].venue, periods: undefined, opensAt: '08:00', closesAt: '22:00' } };
+    expect(blockFlags({ blocks: [early, plan.blocks[1]], localSunsetTime: '6:10 PM' }, early)).toEqual([]);
+    expect(blockFlags({ blocks: [early], localSunsetTime: '6:10 PM' }, { ...early, status: 'completed' })).toEqual([]);
+  });
+  it('no flag label, in any language, claims or implies safety', () => {
+    for (const lang of ['en', 'hi'] as const) {
+      setLang(lang);
+      for (const k of ['flag.closesSoon', 'flag.afterSunset', 'flag.rideBack']) expect(tr(k)).not.toMatch(SAFETY);
+    }
+    setLang('en');
+  });
+});
+
+describe('voice intent', () => {
+  it('maps what people actually say to the adapt chips', () => {
+    expect(parseVoiceIntent("it's raining and my battery is low").scenarios.sort()).toEqual(['low_battery', 'weather_turned']);
+    expect(parseVoiceIntent('I am hungry and running late').scenarios.sort()).toEqual(['hungry_now', 'running_late']);
+    expect(parseVoiceIntent('something quieter please').socialShift).toBe('quieter');
+    expect(parseVoiceIntent('somewhere livelier with music').socialShift).toBe('livelier');
+  });
+  it('understands Hindi and Hinglish', () => {
+    expect(parseVoiceIntent('बारिश हो रही है').scenarios).toContain('weather_turned');
+    expect(parseVoiceIntent('bahut thak gaya hu, bhook lagi hai').scenarios.sort()).toEqual(['hungry_now', 'low_battery']);
+  });
+  it('selects nothing for unrelated speech, never keeps more than 140 characters, and never throws on odd input', () => {
+    expect(parseVoiceIntent('what time is it').scenarios).toEqual([]);
+    expect(parseVoiceIntent('x'.repeat(500)).note.length).toBe(140);
+    expect(parseVoiceIntent('').scenarios).toEqual([]);
+  });
+});
+
+describe('ride links', () => {
+  it('builds the ride-back link to where the day started and a plain heading-to message', () => {
+    const u = new URL(rideBackUrl({ lat: 26.9, lng: 75.8 }));
+    expect(u.hostname).toBe('m.uber.com');
+    expect(u.searchParams.get('dropoff[latitude]')).toBe('26.9');
+    expect(u.searchParams.get('pickup')).toBe('my_location');
+    expect(headingToMessage('Hawa Mahal', '10:30 AM', 'https://maps/x')).toBe('Heading to Hawa Mahal (arriving around 10:30 AM). Map: https://maps/x — sent from PlanB');
+  });
+});
+
+describe('multi-day memory', () => {
+  const store: Record<string, string> = {};
+  beforeEach(() => {
+    for (const k of Object.keys(store)) delete store[k];
+    vi.stubGlobal('localStorage', { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; }, removeItem: (k: string) => { delete store[k]; } });
+  });
+  it('remembers visited and skipped stops per city and leaves them out of the next day, server-side too', async () => {
+    const plan = makePlan();
+    plan.blocks[0].status = 'completed'; plan.blocks[1].status = 'skipped';
+    tripStore.record(plan);
+    const ex = tripStore.excludeFor({ cityId: 'jaipur' });
+    expect(ex).toEqual(expect.arrayContaining([plan.blocks[0].venue.placeId, plan.blocks[1].venue.placeId]));
+    expect(tripStore.excludeFor({ cityId: 'udaipur' })).toEqual([]);
+    expect(tripStore.excludeFor({ query: 'jaipur old city' })).toEqual(expect.arrayContaining(ex));
+    expect(tripStore.preview(plan)).toEqual({ day: 2, skipping: 2 });
+
+    const body = { calibration: { cityId: 'jaipur', startTime: '09:30', endTime: '19:30', energy: 'balanced', budget: '₹₹', afterDark: 'well_lit', social: 'ambient', date: '2026-11-14' }, now: { minutes: 540, date: '2026-11-14' }, excludeIds: ex };
+    const r = await handle(req('POST', '/api/plan/generate', body));
+    const ids = (r.body as any).plan.blocks.map((b: any) => b.venue.placeId);
+    expect(ids.length).toBeGreaterThanOrEqual(3);
+    for (const id of ex) expect(ids).not.toContain(id);
+  });
+  it('falls back to repeats rather than returning a thin day when everything was already seen', async () => {
+    const all = PLACES_DATABASE.filter(v => v.cityId === 'jaipur').map(v => v.placeId);
+    const body = { calibration: { cityId: 'jaipur', startTime: '09:30', endTime: '19:30', energy: 'balanced', budget: '₹₹', afterDark: 'well_lit', social: 'ambient', date: '2026-11-14' }, now: { minutes: 540, date: '2026-11-14' }, excludeIds: all.slice(0, 150) };
+    const r = await handle(req('POST', '/api/plan/generate', body));
+    expect((r.body as any).plan.blocks.length).toBeGreaterThanOrEqual(3);
+  });
+  it('can be cleared', () => {
+    const plan = makePlan(); plan.blocks[0].status = 'completed';
+    tripStore.record(plan); tripStore.clear();
+    expect(tripStore.excludeFor({ cityId: 'jaipur' })).toEqual([]);
+  });
+});

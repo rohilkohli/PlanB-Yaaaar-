@@ -16,3 +16,17 @@ export function uberUrl(v: Pick<VerifiedVenue, 'coords' | 'name'>): string {
   });
   return `https://m.uber.com/ul/?${p.toString()}`;
 }
+
+/** Uber link back to where the day started (the anchor), for the last stop. */
+export function rideBackUrl(anchor: { lat: number; lng: number }): string {
+  const p = new URLSearchParams({
+    action: 'setPickup', pickup: 'my_location',
+    'dropoff[latitude]': String(anchor.lat), 'dropoff[longitude]': String(anchor.lng), 'dropoff[nickname]': 'Where I started'
+  });
+  return `https://m.uber.com/ul/?${p.toString()}`;
+}
+
+/** The message a traveler can send to their contact before heading to a stop. Built on the phone; nothing is stored. */
+export function headingToMessage(name: string, arrive: string, mapsUrl: string): string {
+  return `Heading to ${name} (arriving around ${arrive}). Map: ${mapsUrl} — sent from PlanB`;
+}

@@ -66,37 +66,38 @@ function localContext(city: CityData, dateISO: string, extra: Partial<PlanContex
   };
 }
 
-export function generateLocal(input: CalibrationInput, prefs: TravelerPreferences): DayPlan {
+export function generateLocal(input: CalibrationInput, prefs: TravelerPreferences, excludeIds: string[] = []): DayPlan {
   const { city, anchor, label } = localCity(input);
   const now = nowIn(city.timezone);
   const date = input.date || addDays(now.date, input.dayOffset === 1 ? 1 : 0);
   const calib = buildCalibration({ ...input, coords: anchor, locationLabel: label }, city, date);
   calib.afterDark = input.afterDark ?? prefs.afterDarkMode;
-  const plan = generatePlan(calib, prefs, localContext(city, date));
+  let plan = generatePlan(calib, prefs, { ...localContext(city, date), excludeIds });
+  if (excludeIds.length && plan.blocks.length < 3) plan = generatePlan(calib, prefs, localContext(city, date)); // better a repeat than a thin day
   plan.usedFallback = true;
   return plan;
 }
 
 /* ------------------------------------------------------------------ public API */
 
-export async function buildPlan(input: CalibrationInput, prefs: TravelerPreferences): Promise<{ plan: DayPlan; meta: PlanMeta }> {
+export async function buildPlan(input: CalibrationInput, prefs: TravelerPreferences, excludeIds: string[] = []): Promise<{ plan: DayPlan; meta: PlanMeta }> {
   if (!input.query?.trim() && !input.cityId && !input.coords) throw new PlanError('empty_city', 'Enter a city or neighborhood to build your day.');
   const started = Date.now();
   if (!storage.isOffline()) {
     try {
-      return await post('/api/plan/generate', { calibration: input, guardrails: prefs, ...clockOverride(input.cityId ? (CITIES.find(c => c.id === input.cityId)?.timezone ?? 'Asia/Kolkata') : 'Asia/Kolkata') }, 8000);
+      return await post('/api/plan/generate', { calibration: input, guardrails: prefs, excludeIds, ...clockOverride(input.cityId ? (CITIES.find(c => c.id === input.cityId)?.timezone ?? 'Asia/Kolkata') : 'Asia/Kolkata') }, 8000);
     } catch (e) {
       if (e instanceof PlanError && USER_ERRORS.has(e.code)) {
         // The server may not know a city the offline catalogue does (e.g. API keys not set) — try local before failing.
-        try { const plan = generateLocal(input, prefs); return { plan, meta: { usedFallback: true, fallbackReason: e.code, llm: false, source: 'curated', latencyMs: Date.now() - started } }; }
+        try { const plan = generateLocal(input, prefs, excludeIds); return { plan, meta: { usedFallback: true, fallbackReason: e.code, llm: false, source: 'curated', latencyMs: Date.now() - started } }; }
         catch { throw e; }
       }
       const notice = e instanceof PlanError && e.status === 429 ? 'Live plan limit reached for today.' : undefined;
-      const plan = generateLocal(input, prefs);
+      const plan = generateLocal(input, prefs, excludeIds);
       return { plan, meta: { usedFallback: true, fallbackReason: (e as PlanError).code, llm: false, source: 'curated', latencyMs: Date.now() - started, notice } };
     }
   }
-  const plan = generateLocal(input, prefs);
+  const plan = generateLocal(input, prefs, excludeIds);
   return { plan, meta: { usedFallback: true, fallbackReason: 'offline', llm: false, source: 'curated', latencyMs: Date.now() - started } };
 }
 

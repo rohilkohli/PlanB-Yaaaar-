@@ -14,9 +14,9 @@ import {
 import { addDays, localNow, timeStringToMinutes } from '../src/core/time';
 import { cached, reserveCalls } from './budget';
 import { fetchLegs } from './routes';
+import { logEvent } from './log';
 import { retimePlan } from '../src/core/retime';
 import { signPlan, verifyPlan } from './sign';
-import { truncateCoords } from '../src/core/geo';
 import type { CityData, Coordinates, DayPlan, TravelerPreferences, VerifiedVenue } from '../src/types/itinerary';
 import { env } from './env';
 import { sequenceWithLlm } from './llm';
@@ -32,6 +32,8 @@ export interface PlanMeta {
   llm: boolean;
   source: 'google_places' | 'curated';
   latencyMs: number;
+  /** Where the time went (ms), for tuning and the latency dashboard. */
+  stages?: { resolve: number; candidates: number; llm: number; routes: number };
 }
 
 const BUDGET_TOTAL_MS = () => env().llmTimeoutMs;
@@ -168,6 +170,7 @@ export async function generate(body: any): Promise<{ plan: DayPlan; meta: PlanMe
   if (!input.query && !input.cityId && !input.coords) throw new ApiError(400, 'empty_city', 'Enter a city or neighborhood to build your day.');
   const prefs = sanitizePrefs(body?.guardrails);
   const { city, anchor, label } = await resolveLocation(input);
+  const tResolved = Date.now();
   const now = clock(city, sanitizeClock(body?.now));
   const today = input.date || addDays(now.date, input.dayOffset === 1 ? 1 : 0);
   const calibration = buildCalibration({ ...input, coords: anchor, locationLabel: label }, city, today);
@@ -175,6 +178,7 @@ export async function generate(body: any): Promise<{ plan: DayPlan; meta: PlanMe
   const sunsetMinutes = sunsetFor(city, today);
 
   const { venues, source } = await getCandidates(city, calibration.anchorCoords, today, 2500);
+  const tCandidates = Date.now();
   // Multi-day: stops the traveler already visited or skipped on earlier days (ids only, kept on their phone).
   const excludeIds: string[] = Array.isArray(body?.excludeIds) ? body.excludeIds.filter((x: unknown) => typeof x === 'string' && x.length <= 120).slice(0, 150) : [];
   const ctx: PlanContext = { city, candidates: venues, sunsetMinutes, now, excludeIds };
@@ -195,13 +199,16 @@ export async function generate(body: any): Promise<{ plan: DayPlan; meta: PlanMe
     else reason = out.reason;
   } else { reason = 'no_window'; }
 
+  const tLlm = Date.now();
   let base = generatePlan(calibration, prefs, ctx, hints);
   // Nearly everything nearby was already visited: better a repeat than a thin day.
   if (excludeIds.length && wanted >= 3 && base.blocks.length < 3) base = generatePlan(calibration, prefs, { ...ctx, excludeIds: [] }, hints);
+  const tPlanned = Date.now();
   const plan = await refineTravel(base, sunsetMinutes);
   plan.usedFallback = usedFallback;
   plan.signature = signPlan(plan);
-  return { plan, meta: { usedFallback, fallbackReason: reason, llm, source, latencyMs: Date.now() - started } };
+  const tEnd = Date.now();
+  return { plan, meta: { usedFallback, fallbackReason: reason, llm, source, latencyMs: tEnd - started, stages: { resolve: tResolved - started, candidates: tCandidates - tResolved, llm: tLlm - tCandidates, routes: tEnd - tPlanned } } };
 }
 
 /* ------------------------------------------------------------------ adapt */
@@ -307,21 +314,6 @@ export async function swap(body: any): Promise<{ alternatives: VerifiedVenue[]; 
 
 /* ------------------------------------------------------------------ logging */
 
-/**
- * Structured log line (Cloud Logging reads `severity` and `message` from JSON on stdout).
- * Coordinates are coarsened to city level (PRD §25); IPs are never logged.
- */
-export function logEvent(name: string, props: Record<string, unknown> = {}) {
-  const safe: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(props)) {
-    if (v && typeof v === 'object' && 'lat' in (v as object) && 'lng' in (v as object)) safe[k] = truncateCoords(v as Coordinates);
-    else safe[k] = v;
-  }
-  const isError = name === 'server_error' || name === 'places_error';
-  const severity = isError ? 'ERROR' : 'INFO';
-  // Cloud Error Reporting groups ERROR entries that carry a stack trace in `message` and a serviceContext.
-  const message = isError && typeof safe.stack_trace === 'string' ? `${String(safe.message ?? name)}\n${safe.stack_trace}` : name;
-  if (process.env.NODE_ENV !== 'test') console.log(JSON.stringify({ severity, message, event: name, serviceContext: { service: 'planb' }, ...safe }));
-}
+export { logEvent };
 
 export { approxTimezone, DEFAULT_PREFS };

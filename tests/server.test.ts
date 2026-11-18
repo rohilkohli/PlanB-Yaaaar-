@@ -55,7 +55,7 @@ describe('/api/plan/generate', () => {
     fakeLlm(args => {
       const payload = JSON.parse(args.contents[0].parts[0].text);
       expect(payload.candidates.length).toBeLessThanOrEqual(12);
-      expect(args.generationConfig.maxOutputTokens).toBe(600);
+      expect(args.generationConfig.maxOutputTokens).toBe(320);
       const ids = payload.candidates.map((c: any) => c.place_id);
       return llmText({ blocks: ids.slice(0, 4).map((id: string) => ({ place_id: id, why_it_fits: 'You could start here. It suits a calm pace. Extra third sentence.', solo_tip: 'Easy alone.' })) });
     });

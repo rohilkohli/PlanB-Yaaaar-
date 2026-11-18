@@ -5,6 +5,7 @@
  */
 import { env } from './env';
 import { reserveCalls } from './budget';
+import { logEvent } from './log';
 import { haversineKm, walkMinutes } from '../src/core/geo';
 import type { Coordinates } from '../src/types/itinerary';
 import type { Leg } from '../src/core/retime';
@@ -24,14 +25,14 @@ async function oneLeg(key: string, a: Coordinates, b: Coordinates, mode: 'walk' 
       }),
       signal: AbortSignal.timeout(1800)
     });
-    if (!r.ok) return null;
+    if (!r.ok) { logEvent('routes_error', { status: r.status, mode }); return null; }
     const route = ((await r.json()) as { routes?: Array<{ duration?: string; distanceMeters?: number }> }).routes?.[0];
     const secs = Number(String(route?.duration ?? '').replace('s', ''));
     if (!Number.isFinite(secs) || secs <= 0 || !route?.distanceMeters) return null;
     // Auto-rickshaw / cab: add a small hail-and-wait allowance so the plan is not optimistic.
     const minutes = Math.max(2, Math.ceil(secs / 60)) + (mode === 'cab' ? 4 : 0);
     return { minutes, km: route.distanceMeters / 1000, mode };
-  } catch { return null; }
+  } catch (e) { logEvent('routes_error', { status: 0, mode, reason: (e as Error)?.name }); return null; }
 }
 
 /** `points[i]` is the stop i; returns legs INTO each stop (index 0 is always null). `strideCap` = the traveler's max walking minutes. */

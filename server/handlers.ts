@@ -41,7 +41,7 @@ export async function handle(req: ApiRequest): Promise<ApiResponse> {
       case 'POST /api/plan/generate': {
         const lim = await limited(req, 'generate', e.limitGenerate); if (lim) return lim;
         const out = await generate(req.body);
-        logEvent('plan_generated_server', { city: out.plan.city.id, latency_ms: out.meta.latencyMs, used_fallback: out.meta.usedFallback, reason: out.meta.fallbackReason ?? 'none', source: out.meta.source, blocks: out.plan.blocks.length });
+        logEvent('plan_generated_server', { city: out.plan.city.id, latency_ms: out.meta.latencyMs, used_fallback: out.meta.usedFallback, reason: out.meta.fallbackReason ?? 'none', source: out.meta.source, blocks: out.plan.blocks.length, ...(out.meta.stages ? { resolve_ms: out.meta.stages.resolve, candidates_ms: out.meta.stages.candidates, llm_ms: out.meta.stages.llm, routes_ms: out.meta.stages.routes } : {}) });
         return json(200, out);
       }
       case 'POST /api/plan/adapt': {

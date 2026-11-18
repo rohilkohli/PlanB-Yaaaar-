@@ -62,7 +62,8 @@ export const PrivacyPage: React.FC = () => (
     <L items={[
       'Your current day plan, your preferences (walking limits, dietary, evening comfort, units) and a few counters are saved in your browser (IndexedDB / localStorage) so the app works offline.',
       'They are deleted automatically after 14 days, or immediately with “Reset & delete all my data” in Preferences.',
-      'Venues you flag as “closed” are remembered only for the current browser session.'
+      'Venues you flag as “closed” are remembered only for the current browser session.',
+      'Multi-day memory: the ids of stops you finished or skipped are kept for up to 10 days so the next day in the same city does not repeat them. It never leaves your phone.'
     ]} />
 
     <H>Location</H>
@@ -89,11 +90,14 @@ export const PrivacyPage: React.FC = () => (
     <H>Safety sharing, recaps and reminders (only if you use them)</H>
     <L items={[
       'Share my day live: when you turn it on, our server stores your plan’s times and stops (names only for our own curated places; Google places are stored as IDs only) and your latest location while PlanB is open on your phone. Only the latest point is kept, never a history. Anyone you give the link to can see it. It is not indexed by search engines. It ends when you tap Stop sharing, when you reset your data, or automatically after 18 hours, and the data is deleted.',
-      'Your trusted contact’s name and phone number stay on your phone. They are never sent to us.',
+      'Your trusted contact’s name and phone number stay on your phone. They are never sent to us. The “Tell my contact” message is written on your phone and sent through WhatsApp by you.',
       'Day recap: if you create a link, our server stores the stops and the short notes you wrote, readable by anyone with the link, for up to 30 days. You can delete it at any time.',
       'Reminders: if you turn them on, we store your browser’s push address and the times of at most two notifications for your plan, until they are sent or the day ends. Turn them off in the app or in your browser settings.',
       'Links are long random codes. Anyone who has a link can open it, so share them only with people you trust. PlanB is not an emergency service; in an emergency call 112.'
     ]} />
+
+    <H>Voice input (only if you tap the microphone)</H>
+    <P>Speaking to adjust your day uses your browser’s own speech recognition (in Chrome and Android, Google’s service processes the audio under its own privacy policy). PlanB receives only the resulting text, which only selects the options on screen, and never records or stores audio. You can always tap the options instead.</P>
 
     <H>Your choices</H>
     <L items={[

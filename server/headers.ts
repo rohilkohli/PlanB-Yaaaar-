@@ -25,7 +25,7 @@ export function securityHeaders(): Record<string, string> {
     'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-    'Permissions-Policy': 'geolocation=(self), camera=(), microphone=(), payment=()',
+    'Permissions-Policy': 'geolocation=(self), camera=(), microphone=(self), payment=()',
     'Cross-Origin-Opener-Policy': 'same-origin',
     [enforce ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only']: CSP
   };

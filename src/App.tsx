@@ -3,7 +3,7 @@ import { CalibrationView, type BuildMeta } from './components/CalibrationView';
 import { ActiveCanvasView } from './components/ActiveCanvasView';
 import { CITIES } from './data/placesData';
 import { DataSourcesPage, PrivacyPage, TermsPage } from './pages/LegalPages';
-import { getLang, setLang, type Lang } from './i18n';
+import { getLang, setLang, t, type Lang } from './i18n';
 import { NavigationDock } from './components/NavigationDock';
 import { GeneratingTransition } from './components/GeneratingTransition';
 import type { AdaptSubmit } from './components/AdaptBottomSheet';
@@ -13,6 +13,7 @@ import { CheckInCard } from './components/CheckInCard';
 import { InstallCard } from './components/InstallCard';
 import { clearShareData, deleteRecap, endShare, liveLocation, syncBlockStatus } from './services/liveShare';
 import { disableReminders, syncReminders } from './services/pushService';
+import { tripStore } from './services/trip';
 
 import { storage } from './services/storage';
 import { adaptRemote, buildPlan, fetchRainHint, hydratePlan, loadServerConfig, PlanError } from './services/planService';
@@ -51,6 +52,7 @@ export const App: React.FC = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [rainLikely, setRainLikely] = useState(false);
   const [announce, setAnnounce] = useState('');
+  const [tripDismissed, setTripDismissed] = useState(false);
   const lastInput = useRef<CalibrationInput | null>(null);
   const abortGen = useRef(false);
 
@@ -123,7 +125,10 @@ export const App: React.FC = () => {
     setGenerating({ city: input.query || input.locationLabel || '', demo: !!meta.demo });
     const started = Date.now();
     try {
-      const { plan: p, meta: m } = await buildPlan(input, preferences);
+      // Multi-day: remember how the last day went, then leave already-seen places out of this one.
+      if (plan && !tripDismissed) tripStore.record(plan);
+      const { plan: p, meta: m } = await buildPlan(input, preferences, tripDismissed ? [] : tripStore.excludeFor(input));
+      setTripDismissed(false);
       if (abortGen.current) return;
       setNotice(m.notice ?? null);
       await commit(p, undefined, `Your plan for ${p.city.name} is ready.`);
@@ -235,6 +240,7 @@ export const App: React.FC = () => {
     // Delete everything that left the phone too: the live share, the shared recap and the push subscription.
     await Promise.allSettled([endShare(), deleteRecap(), disableReminders()]);
     clearShareData();
+    tripStore.clear();
     await storage.clearAllData();
     setPlan(null);
     setPreferences(storage.getPreferences());
@@ -264,6 +270,13 @@ export const App: React.FC = () => {
     );
   }
 
+  const trip = params.has('tomorrow') && plan ? tripStore.preview(plan) : null;
+  const tripNote = trip && !tripDismissed ? {
+    title: t('trip.day').replace('{n}', String(trip.day)).replace('{city}', plan?.city.name ?? ''),
+    detail: trip.skipping > 0 ? t('trip.skipping').replace('{count}', String(trip.skipping)) : '',
+    onReset: () => { tripStore.clear(); setTripDismissed(true); }
+  } : null;
+
   const tab = base;
 
   return (
@@ -286,6 +299,7 @@ export const App: React.FC = () => {
             onBuildPlan={handleBuildPlan}
             serverError={calError}
             busy={!!generating}
+            tripNote={tripNote}
             prefill={params.has('tomorrow') && plan ? { cityId: plan.city.id, cityName: plan.city.name, energy: plan.calibration.energy, budget: plan.calibration.budget, afterDark: plan.calibration.afterDark, social: plan.calibration.social } : null}
           />
         )}

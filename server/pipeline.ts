@@ -175,7 +175,9 @@ export async function generate(body: any): Promise<{ plan: DayPlan; meta: PlanMe
   const sunsetMinutes = sunsetFor(city, today);
 
   const { venues, source } = await getCandidates(city, calibration.anchorCoords, today, 2500);
-  const ctx: PlanContext = { city, candidates: venues, sunsetMinutes, now };
+  // Multi-day: stops the traveler already visited or skipped on earlier days (ids only, kept on their phone).
+  const excludeIds: string[] = Array.isArray(body?.excludeIds) ? body.excludeIds.filter((x: unknown) => typeof x === 'string' && x.length <= 120).slice(0, 150) : [];
+  const ctx: PlanContext = { city, candidates: venues, sunsetMinutes, now, excludeIds };
 
   // Late start → compact 1–2 block option (PRD FR-001): handled by planWindow/targetBlockCount.
   const win = planWindow(calibration, sunsetMinutes, now);
@@ -193,7 +195,10 @@ export async function generate(body: any): Promise<{ plan: DayPlan; meta: PlanMe
     else reason = out.reason;
   } else { reason = 'no_window'; }
 
-  const plan = await refineTravel(generatePlan(calibration, prefs, ctx, hints), sunsetMinutes);
+  let base = generatePlan(calibration, prefs, ctx, hints);
+  // Nearly everything nearby was already visited: better a repeat than a thin day.
+  if (excludeIds.length && wanted >= 3 && base.blocks.length < 3) base = generatePlan(calibration, prefs, { ...ctx, excludeIds: [] }, hints);
+  const plan = await refineTravel(base, sunsetMinutes);
   plan.usedFallback = usedFallback;
   plan.signature = signPlan(plan);
   return { plan, meta: { usedFallback, fallbackReason: reason, llm, source, latencyMs: Date.now() - started } };

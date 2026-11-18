@@ -19,3 +19,9 @@ Routes: about 2-3 Essentials requests per plan or adapt (draws from the same `PL
 
 ## Privacy
 Disclosed in the Privacy page ("Safety sharing, recaps and reminders"). Reset & delete in Preferences ends the live share, deletes the recap link and unsubscribes reminders.
+
+## Trips, ride links, voice, stop flags
+- **Multi-day** (`src/services/trip.ts`): ids of stops finished/skipped are kept on the phone for 10 days; the next plan in the same city sends them as `excludeIds` (server `generate` and the offline planner). If that would leave fewer than 3 stops, repeats are allowed instead of a thin day. Cleared by "Reset & delete all my data".
+- **Ride links** (`src/core/transport.ts`): "Ride back" (Uber to where the day started, shown on the last stop) and "Tell {contact}" (a WhatsApp message composed on the phone; nothing goes through our server).
+- **Voice quick adapt** (`src/core/voiceIntent.ts`, `src/services/speech.ts`): browser speech recognition, English/Hindi/Hinglish keywords. It only pre-selects the existing chips; the traveler confirms. Audio is processed by the browser's speech service, PlanB gets text only (disclosed on the Privacy page). `Permissions-Policy` allows `microphone=(self)`.
+- **Stop flags** (`src/core/flags.ts`): factual logistics only ("closes at 6:00 PM, soon after your visit", "ends after sunset", "line up your ride back"). A unit test fails if any label claims or implies safety, in any language.

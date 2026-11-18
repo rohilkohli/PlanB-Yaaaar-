@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { CloudRain, Battery, Clock, Utensils, Users, Moon, Lock, Edit3, Loader2, CloudOff } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { CloudRain, Battery, Clock, Utensils, Users, Moon, Lock, Edit3, Loader2, CloudOff, Mic } from 'lucide-react';
 import type { DayPlan } from '../types/itinerary';
 import { BottomSheet, PrimaryButton } from './ui';
-import { t } from '../i18n';
+import { getLang, t } from '../i18n';
+import { parseVoiceIntent } from '../core/voiceIntent';
+import { listen, speechSupported, type Listener } from '../services/speech';
 
 export interface AdaptSubmit {
   scenarios: string[];
@@ -35,6 +37,29 @@ export const AdaptBottomSheet: React.FC<Props> = ({ currentPlan, isOffline, busy
   const [note, setNote] = useState('');
   const [socialShift, setSocialShift] = useState<'quieter' | 'livelier'>('quieter');
   const [useLocation, setUseLocation] = useState(false);
+  const [heard, setHeard] = useState<string | null>(null);
+  const [voice, setVoice] = useState<'idle' | 'listening'>('idle');
+  const [voiceMsg, setVoiceMsg] = useState<string | null>(null);
+  const rec = useRef<Listener | null>(null);
+  useEffect(() => () => rec.current?.stop(), []);
+
+  // Speaking only PRE-SELECTS the chips and note; the traveler still taps "Reshape rest of day".
+  const speak = () => {
+    if (voice === 'listening') { rec.current?.stop(); return; }
+    setVoiceMsg(null); setHeard(null); setVoice('listening');
+    rec.current = listen(getLang(), {
+      text: s => {
+        const r = parseVoiceIntent(s);
+        setHeard(s);
+        setSelected(p => [...new Set([...p, ...r.scenarios])]);
+        if (r.socialShift) setSocialShift(r.socialShift);
+        setNote(n => n || r.note);
+      },
+      end: () => setVoice('idle'),
+      error: code => { setVoice('idle'); setVoiceMsg(code === 'not-allowed' || code === 'service-not-allowed' ? t('voice.denied') : t('voice.error')); }
+    });
+    if (!rec.current) setVoice('idle');
+  };
 
   const done = currentPlan.blocks.filter(b => b.status === 'completed').length;
   const toggle = (id: string) => setSelected(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
@@ -54,6 +79,18 @@ export const AdaptBottomSheet: React.FC<Props> = ({ currentPlan, isOffline, busy
           <CloudRain className="w-4 h-4 shrink-0" aria-hidden="true" />
           <span>Rain looks likely soon. Tap to choose “Weather turned”.</span>
         </button>
+      )}
+
+      {speechSupported() && !isOffline && (
+        <div className="mb-3">
+          <button type="button" onClick={speak} aria-pressed={voice === 'listening'}
+            className={`min-h-[48px] w-full px-4 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${voice === 'listening' ? 'bg-red-700 text-white' : 'bg-white/85 border border-card-border text-obsidian'}`}>
+            <Mic className="w-4 h-4" aria-hidden="true" />{voice === 'listening' ? t('voice.listening') : t('voice.mic')}
+          </button>
+          {heard && <p role="status" className="mt-1.5 text-xs text-obsidian">{t('voice.heard')} “{heard}”</p>}
+          {voiceMsg && <p role="alert" className="mt-1.5 text-xs text-red-800">{voiceMsg}</p>}
+          <p className="mt-1 text-[11px] text-olive-slate">{t('voice.hint')}</p>
+        </div>
       )}
 
       <div className="grid grid-cols-2 gap-2 mb-3" role="group" aria-label="What changed">

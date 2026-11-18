@@ -111,13 +111,24 @@ async function main() {
 
     // ---- Adapt at 14:00
     await page.evaluate(() => localStorage.setItem('planb_test_clock', '14:00'));
+    // A fake speech engine so the voice flow is testable headlessly (the real one needs a microphone and the browser's service).
+    await page.evaluate(`(function () {
+      function Fake() { this.lang = ''; }
+      Fake.prototype.start = function () { var self = this; setTimeout(function () { if (self.onresult) self.onresult({ results: [[{ transcript: 'it is raining and my battery is low' }]] }); if (self.onend) self.onend(); }, 50); };
+      Fake.prototype.stop = function () {};
+      window.webkitSpeechRecognition = Fake; window.SpeechRecognition = Fake;
+    })()`);
     await page.getByRole('button', { name: 'Adapt my day' }).click();
     await page.waitForURL('**/today#adapt');
     await page.getByRole('dialog', { name: 'What changed?' }).waitFor();
     await page.screenshot({ path: `${SHOTS}/04-adapt.png` });
     await axeAudit(page, 'adapt sheet');
-    await page.getByRole('button', { name: 'Weather turned' }).click();
-    await page.getByRole('button', { name: 'Low battery' }).click();
+    await page.getByRole('button', { name: 'Speak' }).click();
+    await page.getByText(/Heard:.*raining/).waitFor();
+    assert.equal(await page.getByRole('button', { name: 'Weather turned' }).getAttribute('aria-pressed'), 'true', 'voice selects Weather turned');
+    assert.equal(await page.getByRole('button', { name: 'Low battery' }).getAttribute('aria-pressed'), 'true', 'voice selects Low battery');
+    assert.equal(await page.getByRole('button', { name: 'Running late' }).getAttribute('aria-pressed'), 'false', 'voice does not select unrelated chips');
+    step('voice: speaking pre-selects the matching chips; the traveler still confirms');
     await page.getByRole('button', { name: 'Reshape rest of day' }).click();
     await page.getByRole('button', { name: 'Undo change' }).waitFor();
     const adapted = await names(page);
@@ -191,6 +202,8 @@ async function main() {
     await page.getByRole('button', { name: 'Plan tomorrow' }).click();
     await page.getByRole('radio', { name: 'Tomorrow' }).waitFor();
     assert.equal(await page.getByRole('radio', { name: 'Tomorrow' }).getAttribute('aria-checked'), 'true');
+    await page.getByText(/Day 2 in Jaipur/).waitFor();
+    step('multi-day: planning tomorrow shows "Day 2" and what will be left out');
     await page.getByRole('button', { name: /Skip — build with defaults/ }).click();
     await page.getByText(/Plan for tomorrow/).waitFor();
     assert.ok((await names(page)).length >= 3, 'tomorrow gets a full 3–4 block plan');
@@ -234,6 +247,8 @@ async function main() {
     await viewer.close();
     step('safety: stopping a share ends the link immediately');
     await page.keyboard.press('Escape');
+    await page.getByRole('link', { name: /Tell Asha/ }).first().waitFor();
+    step('ride: with a saved contact each upcoming stop offers a "Tell Asha" message');
 
     // ---- Recap: notes + shareable page
     await page.goto(`${BASE}/today`);

@@ -19,7 +19,9 @@ import { DayPlan, PlanBlock } from '../types/itinerary';
 import { haversineKm } from '../core/geo';
 import { nowIn } from '../core/clock';
 import { VenueImage } from './ui';
-import { transitUrl, uberUrl } from '../core/transport';
+import { headingToMessage, rideBackUrl, transitUrl, uberUrl } from '../core/transport';
+import { blockFlags } from '../core/flags';
+import { contactStore, whatsappLink } from '../services/liveShare';
 import { DataSourcesLink } from '../pages/LegalPages';
 import { t } from '../i18n';
 
@@ -457,6 +459,38 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                         className="min-h-[36px] px-3 inline-flex items-center rounded-full bg-white/80 border border-white/80 font-semibold text-obsidian hover:bg-white">Uber</a>
                       <span className="text-olive-slate">Auto-rickshaw: show the drop-off on Maps and agree the fare first.</span>
                     </div>
+                    {(() => {
+                      const flags = blockFlags(plan, block);
+                      const contact = contactStore.get();
+                      const heading = contact && block.status !== 'completed' && block.status !== 'skipped';
+                      if (!flags.length && !heading) return null;
+                      return (
+                        <div className="mt-2 flex flex-col gap-1.5">
+                          {flags.length > 0 && (
+                            <ul aria-label="Good to know" className="flex flex-col gap-1.5">
+                              {flags.map(f => (
+                                <li key={f.id} className="text-[11px] leading-snug text-amber-950 bg-amber-50 border border-amber-200 rounded-xl px-2.5 py-1.5 flex gap-1.5 items-start">
+                                  <Info className="w-3.5 h-3.5 shrink-0 mt-px" aria-hidden="true" />
+                                  <span>{t(f.key).replace('{time}', f.time ?? '')}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          <div className="flex gap-2 flex-wrap">
+                            {flags.some(f => f.id === 'ride_back') && (
+                              <a href={rideBackUrl(plan.calibration.anchorCoords)} target="_blank" rel="noopener noreferrer"
+                                className="min-h-[44px] px-3.5 inline-flex items-center rounded-full bg-obsidian text-white text-[11px] font-bold">{t('ride.back')}</a>
+                            )}
+                            {heading && contact && (
+                              <a href={whatsappLink(headingToMessage(vName(block.venue), block.timeLabel.split(' – ')[0], block.venue.mapsUrl), contact.phone)} target="_blank" rel="noopener noreferrer"
+                                className="min-h-[44px] px-3.5 inline-flex items-center rounded-full bg-white/80 border border-white/80 text-[11px] font-bold text-obsidian hover:bg-white">
+                                {t('ride.tell').replace('{name}', contact.name || t('ride.tellContact'))}
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </article>
 
                   {/* Transit Connector */}

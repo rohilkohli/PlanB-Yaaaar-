@@ -24,6 +24,8 @@ interface Props {
   serverError?: string | null;
   busy?: boolean;
   /** Carry the previous plan's answers over (used by "Plan tomorrow"). */
+  /** Multi-day note: which day this is and how many seen places will be skipped. */
+  tripNote?: { title: string; detail: string; onReset: () => void } | null;
   prefill?: { cityId?: string; cityName: string; energy: CalibrationData['energy']; budget: string; afterDark: CalibrationData['afterDark']; social: CalibrationData['social'] } | null;
 }
 
@@ -40,7 +42,7 @@ function defaultWindow(timeZone?: string, tomorrow = false) {
   return { start: '09:30', end: '19:30' };
 }
 
-export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails, onBuildPlan, serverError, busy, prefill }) => {
+export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails, onBuildPlan, serverError, busy, prefill, tripNote }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [query, setQuery] = useState(prefill?.cityName ?? '');
   // Three random real destinations per visit, instead of the full list.
@@ -203,6 +205,13 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
           <h1 id="q1" ref={headingRef} tabIndex={-1} className="font-bold text-xl text-obsidian leading-snug tracking-tight mb-4 outline-hidden">
             {t('calib.where')}
           </h1>
+          {tripNote && (
+            <div role="status" className="-mt-2 mb-3 p-3 rounded-2xl bg-white/85 border border-card-border">
+              <p className="text-sm font-bold text-obsidian">{tripNote.title}</p>
+              {tripNote.detail && <p className="text-xs text-olive-slate mt-0.5">{tripNote.detail}</p>}
+              <button type="button" onClick={tripNote.onReset} className="mt-1 min-h-[44px] -mb-2 text-xs font-semibold underline text-obsidian">{t('trip.reset')}</button>
+            </div>
+          )}
 
           <div className="relative mb-3">
             <label htmlFor="city-input" className="sr-only">City or neighborhood</label>

@@ -5,6 +5,21 @@
 export type Lang = 'en' | 'hi';
 
 const STRINGS: Record<string, Record<Lang, string>> = {
+  'flag.closesSoon': { en: 'Closes at {time}, soon after your visit', hi: '{time} पर बंद होता है, आपकी विज़िट के तुरंत बाद' },
+  'flag.afterSunset': { en: 'Ends after sunset ({time})', hi: 'सूर्यास्त ({time}) के बाद ख़त्म होता है' },
+  'flag.rideBack': { en: 'Last stop of the day. Line up your ride back.', hi: 'दिन का आख़िरी स्टॉप। लौटने का साधन पहले से तय करें।' },
+  'ride.back': { en: 'Ride back', hi: 'वापसी की सवारी' },
+  'ride.tell': { en: 'Tell {name}', hi: '{name} को बताएँ' },
+  'ride.tellContact': { en: 'Tell my contact', hi: 'अपने संपर्क को बताएँ' },
+  'voice.mic': { en: 'Speak', hi: 'बोलकर बताएँ' },
+  'voice.listening': { en: 'Listening…', hi: 'सुन रहे हैं…' },
+  'voice.heard': { en: 'Heard:', hi: 'सुना:' },
+  'voice.hint': { en: 'Your browser’s speech service listens; PlanB keeps only the text. Check the chips, then reshape.', hi: 'आपके ब्राउज़र की स्पीच सेवा सुनती है; PlanB सिर्फ़ टेक्स्ट रखता है। चिप्स जाँचें, फिर बदलें।' },
+  'voice.error': { en: 'Couldn’t hear that. Try again or tap a chip.', hi: 'सुनाई नहीं दिया। दोबारा कोशिश करें या चिप चुनें।' },
+  'voice.denied': { en: 'Microphone access is blocked in your browser settings.', hi: 'माइक्रोफ़ोन की अनुमति आपकी ब्राउज़र सेटिंग में बंद है।' },
+  'trip.day': { en: 'Day {n} in {city}', hi: '{city} में दिन {n}' },
+  'trip.skipping': { en: 'We’ll leave out {count} places you’ve already seen.', hi: 'हम उन {count} जगहों को छोड़ देंगे जो आप देख चुके हैं।' },
+  'trip.reset': { en: 'Start fresh', hi: 'नए सिरे से शुरू करें' },
   'safety.title': { en: 'Safety', hi: 'सुरक्षा' },
   'safety.subtitle': { en: 'Share your day with someone you trust.', hi: 'अपना दिन किसी भरोसेमंद व्यक्ति के साथ साझा करें।' },
   'safety.contact': { en: 'Trusted contact', hi: 'भरोसेमंद संपर्क' },

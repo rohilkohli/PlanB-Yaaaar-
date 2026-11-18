@@ -65,6 +65,19 @@ async function main() {
     await page.getByText('Enter a city or neighborhood to build your day.').waitFor();
     step('empty city is blocked with the PRD message');
 
+    // ---- Location picker: ONE tap on a suggestion must be enough (regression: the list used to re-open after a pick)
+    await page.route('**/api/places/autocomplete*', r => r.fulfill({ json: { suggestions: [{ text: 'Pushkar, Rajasthan, India' }] } }));
+    await page.fill('#city-input', 'Pushk');
+    await page.getByRole('button', { name: 'Pushkar, Rajasthan, India' }).click();
+    await page.waitForTimeout(900); // longer than the autocomplete debounce + response
+    assert.equal(await page.getByRole('listbox', { name: 'Suggestions' }).count(), 0, 'suggestions stay closed after one tap');
+    assert.equal(await page.inputValue('#city-input'), 'Pushkar, Rajasthan, India');
+    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('heading', { name: /pace today/ }).waitFor();
+    step('location picker: one tap on a suggestion fills the field, closes the list, and Next works at once');
+    await page.getByRole('button', { name: 'Back' }).click();
+    await page.unroute('**/api/places/autocomplete*');
+
     await page.fill('#city-input', 'Jaipur');
     await page.getByRole('button', { name: 'Next' }).click();
     await page.getByRole('heading', { name: /pace today/ }).waitFor();

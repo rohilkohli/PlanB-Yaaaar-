@@ -84,12 +84,18 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
     headingRef.current?.focus();
   }, [step]);
 
-  // Autocomplete (debounced)
+  // Autocomplete (debounced). `settled` is the text that was CHOSEN (a suggestion, a curated city or the GPS label):
+  // suggestions are never re-fetched for it, so one tap really is enough. Late answers to older keystrokes are ignored.
+  const settled = useRef<string | null>(null);
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 2 || (city && q.toLowerCase().startsWith(city.name.toLowerCase()))) { setSuggestions([]); return; }
-    const t = setTimeout(async () => setSuggestions((await fetchSuggestions(q)).slice(0, 5)), 250);
-    return () => clearTimeout(t);
+    if (q.length < 2 || q === settled.current || (city && q.toLowerCase().startsWith(city.name.toLowerCase()))) { setSuggestions([]); return; }
+    let alive = true;
+    const t = setTimeout(async () => {
+      const found = (await fetchSuggestions(q)).slice(0, 5);
+      if (alive) setSuggestions(found);
+    }, 250);
+    return () => { alive = false; clearTimeout(t); };
   }, [query, city]);
 
   const touched = () => track('calibration_started', { entry_source: 'manual', used_gps: usedGps });
@@ -116,11 +122,11 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
         setGpsNotice('Finding your area…');
         // Show what we picked up: nearest curated city, else the place name from reverse geocoding, else coordinates.
         const label = near?.name;
-        if (label) { setQuery(label); setGpsNotice(`Using your location near ${label}.`); }
+        if (label) { settled.current = label; setQuery(label); setSuggestions([]); setGpsNotice(`Using your location near ${label}.`); }
         else {
-          setQuery('Your current location');
+          settled.current = 'Your current location'; setQuery('Your current location'); setSuggestions([]);
           fetchReverse(c).then(r => {
-            if (r?.name) setQuery(r.name);
+            if (r?.name) { settled.current = r.name; setQuery(r.name); setSuggestions([]); }
             setGpsNotice(r?.name ? `Using your location near ${r.name}.` : 'Using your current location.');
           });
         }
@@ -158,6 +164,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
     setCityId(id);
     setCoords(undefined);
     setUsedGps(false);
+    settled.current = c?.name ?? null;
     setQuery(c?.name ?? '');
     setError(null);
     setSuggestions([]);
@@ -223,7 +230,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
               inputMode="search"
               autoComplete="off"
               value={query}
-              onChange={e => { touched(); setQuery(e.target.value); setCityId(undefined); setCoords(undefined); setUsedGps(false); setError(null); }}
+              onChange={e => { touched(); settled.current = null; setQuery(e.target.value); setCityId(undefined); setCoords(undefined); setUsedGps(false); setError(null); }}
               placeholder="City or neighborhood"
               aria-invalid={!!shown}
               aria-describedby={shown ? 'city-error' : undefined}
@@ -240,7 +247,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
                       className="w-full min-h-[44px] px-4 text-left text-sm text-obsidian hover:bg-recessed active:bg-recessed-dark"
                       onClick={() => {
                         if (s.cityId) pickCity(s.cityId);
-                        else { setQuery(s.text); setCityId(undefined); setSuggestions([]); setError(null); }
+                        else { settled.current = s.text; setQuery(s.text); setCityId(undefined); setCoords(undefined); setUsedGps(false); setSuggestions([]); setError(null); }
                       }}
                     >
                       {s.text}

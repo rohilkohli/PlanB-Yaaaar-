@@ -44,7 +44,7 @@ const step = (m: string) => console.log(`  ✓ ${m}`);
 async function main() {
   let server: ReturnType<typeof spawn> | null = null;
   if (!process.env.BASE_URL) {
-    server = spawn('node', ['dist-server/index.mjs'], { env: { ...process.env, PORT: String(PORT), ALLOW_TEST_CLOCK: '1', GOOGLE_PLACES_API_KEY: '', GEMINI_API_KEY: '', NODE_ENV: 'production', VAPID_PUBLIC_KEY: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM', VAPID_PRIVATE_KEY: 'e2e-not-used' }, stdio: 'ignore' });
+    server = spawn('node', ['dist-server/index.mjs'], { env: { ...process.env, PORT: String(PORT), ALLOW_TEST_CLOCK: '1', GOOGLE_PLACES_API_KEY: '', GEMINI_API_KEY: '', NODE_ENV: 'production', VAPID_PUBLIC_KEY: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM', VAPID_PRIVATE_KEY: 'e2e-not-used', GOOGLE_MAPS_BROWSER_KEY: 'e2e-fake-key' }, stdio: 'ignore' });
   }
   try {
     await waitForServer();
@@ -299,6 +299,7 @@ async function main() {
     step('install card appears once, offers reminders, and can be dismissed');
 
     // ---- Map Explorer (zero-config: curated fallback)
+    await page.route('https://maps.googleapis.com/**', r => r.abort()); // no real Google in tests: the drawn map is used
     await page.goto(`${BASE}/map`);
     await page.getByRole('radio', { name: 'Cafés' }).click();
     // Curated data may have no cafés for the randomly chosen city; either a list or the empty-state message is valid.
@@ -325,6 +326,42 @@ async function main() {
     await page.getByText('Curated listings').first().waitFor();
     await axeAudit(page, 'data sources page');
     step('privacy / terms / data-sources pages render and pass axe');
+
+    // ---- Map tiles follow the theme (stubbed Google Maps so the wiring is tested without real tiles)
+    const mp = await context.newPage();
+    await mp.route('https://maps.googleapis.com/**', r => r.fulfill({ contentType: 'application/javascript', body: `window.google={maps:{SymbolPath:{CIRCLE:0},Map:function(el,o){window.__mapOpts=Object.assign({},o);this.setOptions=function(n){window.__mapOpts=Object.assign({},window.__mapOpts,n)};this.setCenter=function(){}},Marker:function(){this.setMap=function(){};this.addListener=function(){}}}};` }));
+    await mp.goto(`${BASE}/map`);
+    await mp.waitForFunction(() => !!(window as any).__mapOpts);
+    const mapStyles = () => mp.evaluate(() => ((window as any).__mapOpts.styles || []).length as number);
+    const startedDark = scheme === 'dark';
+    assert.equal((await mapStyles()) > 0, startedDark, `map tiles start ${scheme}`);
+    await mp.emulateMedia({ colorScheme: startedDark ? 'light' : 'dark' });
+    await mp.waitForFunction(([want]) => (((window as any).__mapOpts.styles || []).length > 0) === want, [!startedDark]);
+    await mp.emulateMedia({ colorScheme: scheme });
+    await mp.waitForFunction(([want]) => (((window as any).__mapOpts.styles || []).length > 0) === want, [startedDark]);
+    await mp.close();
+    step('map tiles: dark style at creation and restyled live when the theme changes');
+
+    // ---- Theme switch: System / Light / Dark in Preferences
+    const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+    const lum = (rgb: string) => { const [r, g, b] = (rgb.match(/\d+/g) || ['0', '0', '0']).map(Number); return (r + g + b) / 3; };
+    await page.goto(`${BASE}/preferences`);
+    const prefs = page.getByRole('dialog', { name: 'Preferences' });
+    const baseline = lum(await bg());
+    const opposite = scheme === 'dark' ? 'Light' : 'Dark';
+    await prefs.getByRole('radio', { name: opposite, exact: true }).click();
+    assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-theme')), opposite.toLowerCase(), 'choice is applied to <html>');
+    await page.waitForTimeout(700);
+    const flipped = lum(await bg());
+    assert.ok(scheme === 'dark' ? flipped > baseline + 80 : flipped < baseline - 80, `page colours flip (${baseline} → ${flipped})`);
+    await axeAudit(page, `preferences (${opposite} chosen on a ${scheme} phone)`);
+    await page.reload();
+    assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-theme')), opposite.toLowerCase(), 'choice survives a reload');
+    await page.getByRole('dialog', { name: 'Preferences' }).getByRole('radio', { name: 'System', exact: true }).click();
+    assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-theme')), null, 'System removes the override');
+    await page.waitForTimeout(700);
+    assert.ok(Math.abs(lum(await bg()) - baseline) < 10, 'System follows the phone again');
+    step('theme switch: Light / Dark override the phone, persist across reloads, System follows the phone again');
 
     // ---- Hindi: switch in Preferences, the main screen changes, switch back
     await page.goto(`${BASE}/preferences`);

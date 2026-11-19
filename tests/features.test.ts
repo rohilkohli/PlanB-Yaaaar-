@@ -284,3 +284,61 @@ describe('multi-day memory', () => {
     expect(tripStore.excludeFor({ cityId: 'jaipur' })).toEqual([]);
   });
 });
+
+/* ------------------------------------------------------------------ theme + map tiles */
+import { DARK_MAP_STYLE, mapStylesFor } from '../src/services/mapStyle';
+
+describe('theme service', () => {
+  const store: Record<string, string> = {};
+  const attrs: Record<string, string> = {};
+  let systemDark = false;
+  const metas = [{ dataset: {} as Record<string, string>, media: '(prefers-color-scheme: light)', content: '', getAttribute(n: string) { return n === 'media' ? this.media : null; }, setAttribute(n: string, v: string) { if (n === 'media') this.media = v; } },
+                 { dataset: {} as Record<string, string>, media: '(prefers-color-scheme: dark)', content: '', getAttribute(n: string) { return n === 'media' ? this.media : null; }, setAttribute(n: string, v: string) { if (n === 'media') this.media = v; } }];
+  beforeEach(() => {
+    for (const k of Object.keys(store)) delete store[k];
+    for (const k of Object.keys(attrs)) delete attrs[k];
+    systemDark = false;
+    vi.stubGlobal('localStorage', { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; }, removeItem: (k: string) => { delete store[k]; } });
+    vi.stubGlobal('document', { documentElement: { setAttribute: (k: string, v: string) => { attrs[k] = v; }, removeAttribute: (k: string) => { delete attrs[k]; }, getAttribute: (k: string) => attrs[k] ?? null }, querySelectorAll: () => metas });
+    vi.stubGlobal('window', { matchMedia: () => ({ get matches() { return systemDark; }, addEventListener() {}, removeEventListener() {} }), dispatchEvent: () => true, addEventListener() {}, removeEventListener() {} });
+  });
+  it('follows the phone by default and lets the traveler override it', async () => {
+    const th = await import('../src/services/theme');
+    expect(th.getThemeChoice()).toBe('system');
+    expect(th.resolvedTheme()).toBe('light');
+    systemDark = true;
+    expect(th.resolvedTheme()).toBe('dark');
+    th.setThemeChoice('light');
+    expect(attrs['data-theme']).toBe('light');
+    expect(th.resolvedTheme()).toBe('light'); // override beats a dark phone
+    th.setThemeChoice('dark');
+    expect(store['planb_theme']).toBe('dark');
+    th.setThemeChoice('system');
+    expect(attrs['data-theme']).toBeUndefined();
+    expect(store['planb_theme']).toBeUndefined();
+  });
+  it('only the chosen browser-bar colour applies when overriding, and both again for System', async () => {
+    const th = await import('../src/services/theme');
+    th.setThemeChoice('dark');
+    expect(metas.map(m => m.media)).toEqual(['not all', 'all']);
+    th.setThemeChoice('light');
+    expect(metas.map(m => m.media)).toEqual(['all', 'not all']);
+    th.setThemeChoice('system');
+    expect(metas.map(m => m.media)).toEqual(['(prefers-color-scheme: light)', '(prefers-color-scheme: dark)']);
+  });
+  it('ignores junk in storage', async () => {
+    store['planb_theme'] = 'purple';
+    expect((await import('../src/services/theme')).getThemeChoice()).toBe('system');
+  });
+});
+
+describe('map tiles follow the theme', () => {
+  it('uses Google defaults in light and a complete night style in dark', () => {
+    expect(mapStylesFor('light')).toEqual([]);
+    const dark = mapStylesFor('dark');
+    expect(dark).toBe(DARK_MAP_STYLE);
+    const feats = new Set(dark.map(s => s.featureType));
+    for (const f of ['road', 'road.highway', 'water', 'poi.park', 'transit']) expect(feats.has(f)).toBe(true);
+    expect(dark.every(s => Array.isArray(s.stylers))).toBe(true);
+  });
+});

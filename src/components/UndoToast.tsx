@@ -19,12 +19,12 @@ export const UndoToast: React.FC<Props> = ({ undoState, onUndo, onDismiss }) => 
   if (!undoState.active) return null;
 
   return (
-    <div role="status" aria-live="polite" className="fixed top-4 left-1/2 -translate-x-1/2 z-60 w-[92%] max-w-sm bg-obsidian-deep text-white pl-4 pr-2 py-2 rounded-2xl shadow-float flex items-center justify-between gap-3 animate-slide-down border border-white/10">
+    <div role="status" aria-live="polite" className="fixed top-4 left-1/2 -translate-x-1/2 z-60 w-[92%] max-w-sm bg-obsidian-deep text-white pl-4 pr-2 py-2 rounded-2xl shadow-float flex items-center justify-between gap-3 animate-slide-down border border-edge/10">
       <div className="flex items-center gap-2.5 min-w-0">
         <RotateCcw className="w-4 h-4 text-chartreuse shrink-0" aria-hidden="true" />
         <div className="flex flex-col min-w-0">
           <span className="text-xs font-semibold truncate">{undoState.message}</span>
-          <span className="text-[11px] text-white/80">Undo available for {secondsRemaining}s</span>
+          <span className="text-xs text-white/80">Undo available for {secondsRemaining}s</span>
         </div>
       </div>
       <div className="flex items-center gap-1 shrink-0">

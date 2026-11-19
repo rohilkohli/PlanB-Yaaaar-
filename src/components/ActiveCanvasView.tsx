@@ -115,12 +115,12 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
 
         <div className="flex items-center gap-2">
           {isOffline ? (
-            <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 text-[10px] font-bold flex items-center gap-1 border border-amber-300">
+            <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold flex items-center gap-1 border border-amber-300">
               <CloudOff className="w-3 h-3" />
               <span>Offline</span>
             </span>
           ) : (
-            <span className="px-2.5 py-1 rounded-full bg-white/70 backdrop-blur-md text-olive-slate text-[11px] font-semibold flex items-center gap-1 border border-white/80 shadow-2xs">
+            <span className="px-2.5 py-1 rounded-full bg-surface/70 backdrop-blur-md text-olive-slate text-xs font-semibold flex items-center gap-1 border border-edge/80 shadow-2xs">
               <Sun className="w-3 h-3 text-coral" />
               <span>Sunset {plan.localSunsetTime}</span>
             </span>
@@ -129,7 +129,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           <button
             type="button"
             onClick={() => onNewDay()}
-            className="min-h-[44px] px-3.5 rounded-full bg-white/75 backdrop-blur-xl border border-white/80 text-xs font-bold text-obsidian hover:bg-white/90 active:scale-95 transition-all shadow-xs"
+            className="min-h-[44px] px-3.5 rounded-full bg-surface/75 backdrop-blur-xl border border-edge/80 text-xs font-bold text-obsidian hover:bg-surface/90 active:scale-95 transition-all shadow-xs"
           >
             {t('today.newDay')}
           </button>
@@ -137,7 +137,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           <button
             type="button"
             onClick={onOpenGuardrails}
-            className="w-11 h-11 rounded-full bg-white/75 backdrop-blur-xl border border-white/80 flex items-center justify-center text-obsidian hover:bg-white/90 active:scale-95 transition-all shadow-xs"
+            className="w-11 h-11 rounded-full bg-surface/75 backdrop-blur-xl border border-edge/80 flex items-center justify-center text-obsidian hover:bg-surface/90 active:scale-95 transition-all shadow-xs"
             title="Preferences"
             aria-label="Preferences and guardrails"
           >
@@ -147,10 +147,10 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
       </header>
 
       <div className="flex gap-2 mb-3">
-        <button type="button" onClick={onOpenSafety} className="min-h-[44px] px-4 rounded-full bg-white/85 border border-card-border text-xs font-bold text-obsidian inline-flex items-center gap-1.5 active:scale-95 transition-all shadow-xs">
+        <button type="button" onClick={onOpenSafety} className="min-h-[44px] px-4 rounded-full bg-surface/85 border border-card-border text-xs font-bold text-obsidian inline-flex items-center gap-1.5 active:scale-95 transition-all shadow-xs">
           <ShieldCheck className="w-4 h-4 text-spruce" aria-hidden="true" />{t('safety.button')}
         </button>
-        <button type="button" onClick={onOpenRecap} className="min-h-[44px] px-4 rounded-full bg-white/85 border border-card-border text-xs font-bold text-obsidian inline-flex items-center gap-1.5 active:scale-95 transition-all shadow-xs">
+        <button type="button" onClick={onOpenRecap} className="min-h-[44px] px-4 rounded-full bg-surface/85 border border-card-border text-xs font-bold text-obsidian inline-flex items-center gap-1.5 active:scale-95 transition-all shadow-xs">
           <BookOpen className="w-4 h-4 text-spruce" aria-hidden="true" />{t('recap.button')}
         </button>
       </div>
@@ -163,17 +163,17 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
             <div className="flex-1">
               <p>Private browsing detected — copy your plan to keep it saved.</p>
-              <button type="button" onClick={onCopyPlan} className="mt-1.5 min-h-[44px] px-3 rounded-full bg-white border border-amber-300 font-bold flex items-center gap-1.5">
+              <button type="button" onClick={onCopyPlan} className="mt-1.5 min-h-[44px] px-3 rounded-full bg-surface border border-amber-300 font-bold flex items-center gap-1.5">
                 <Copy className="w-3.5 h-3.5" aria-hidden="true" /> Copy plan
               </button>
             </div>
           </div>
         )}
         {plan.usedFallback && (
-          <div role="status" className="p-2.5 pl-3 rounded-2xl bg-white/70 border border-white/80 text-xs text-olive-slate flex items-center justify-between gap-2">
+          <div role="status" className="p-2.5 pl-3 rounded-2xl bg-surface/70 border border-edge/80 text-xs text-olive-slate flex items-center justify-between gap-2">
             <span>{notice || 'Built in fast local mode'}</span>
             {!isOffline && (
-              <button type="button" disabled={busy} onClick={onRetryLive} className="min-h-[44px] px-3 rounded-full bg-white border border-card-border font-bold text-obsidian flex items-center gap-1.5 disabled:opacity-50">
+              <button type="button" disabled={busy} onClick={onRetryLive} className="min-h-[44px] px-3 rounded-full bg-surface border border-card-border font-bold text-obsidian flex items-center gap-1.5 disabled:opacity-50">
                 <RotateCw className={`w-3.5 h-3.5 ${busy ? 'animate-spin' : ''}`} aria-hidden="true" /> Retry
               </button>
             )}
@@ -186,7 +186,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           </div>
         )}
         {hoursStale && (
-          <p className="text-[11px] text-olive-slate px-1">Opening hours were last checked over a day ago. Reconnect to refresh them.</p>
+          <p className="text-xs text-olive-slate px-1">Opening hours were last checked over a day ago. Reconnect to refresh them.</p>
         )}
       </div>
 
@@ -196,7 +196,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           <h1 className="font-extrabold text-2xl text-obsidian tracking-tight">
             {plan.city.name}
           </h1>
-          <span className="text-xs font-semibold text-spruce bg-white/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/80 shadow-2xs">
+          <span className="text-xs font-semibold text-spruce bg-surface/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-edge/80 shadow-2xs">
             {completedCount} of {plan.blocks.length} done
           </span>
         </div>
@@ -209,48 +209,48 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
       </section>
 
       {/* Master Day Summary Glass Module (From Google Stitch Specification) */}
-      <div className="mb-4 bg-white/70 backdrop-blur-xl rounded-2xl p-3 border border-white/80 shadow-glass-card grid grid-cols-2 gap-2 text-xs">
-        <div className="flex items-center gap-2 bg-white/60 backdrop-blur-md p-2 rounded-xl border border-white/60">
+      <div className="mb-4 bg-surface/70 backdrop-blur-xl rounded-2xl p-3 border border-edge/80 shadow-glass-card grid grid-cols-2 gap-2 text-xs">
+        <div className="flex items-center gap-2 bg-surface/60 backdrop-blur-md p-2 rounded-xl border border-edge/60">
           <Clock className="w-3.5 h-3.5 text-spruce shrink-0" />
           <div className="min-w-0">
-            <span className="text-[10px] uppercase font-bold text-olive-slate/80 block leading-tight">Time Span</span>
+            <span className="text-xs uppercase font-bold text-olive-slate/80 block leading-tight">Time Span</span>
             <span className="font-bold text-obsidian truncate block">{plan.calibration.startTime} – {plan.calibration.endTime}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-white/60 backdrop-blur-md p-2 rounded-xl border border-white/60">
+        <div className="flex items-center gap-2 bg-surface/60 backdrop-blur-md p-2 rounded-xl border border-edge/60">
           <Footprints className="w-3.5 h-3.5 text-spruce shrink-0" />
           <div className="min-w-0">
-            <span className="text-[10px] uppercase font-bold text-olive-slate/80 block leading-tight">Walking</span>
+            <span className="text-xs uppercase font-bold text-olive-slate/80 block leading-tight">Walking</span>
             <span className="font-bold text-obsidian truncate block">{walkLabel}</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-white/60 backdrop-blur-md p-2 rounded-xl border border-white/60">
+        <div className="flex items-center gap-2 bg-surface/60 backdrop-blur-md p-2 rounded-xl border border-edge/60">
           <Compass className="w-3.5 h-3.5 text-spruce shrink-0" />
           <div className="min-w-0">
-            <span className="text-[10px] uppercase font-bold text-olive-slate/80 block leading-tight">Pace</span>
+            <span className="text-xs uppercase font-bold text-olive-slate/80 block leading-tight">Pace</span>
             <span className="font-bold text-obsidian capitalize truncate block">{plan.calibration.energy} pace</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-white/60 backdrop-blur-md p-2 rounded-xl border border-white/60">
+        <div className="flex items-center gap-2 bg-surface/60 backdrop-blur-md p-2 rounded-xl border border-edge/60">
           <Sun className="w-3.5 h-3.5 text-coral shrink-0" />
           <div className="min-w-0">
-            <span className="text-[10px] uppercase font-bold text-olive-slate/80 block leading-tight">Daylight</span>
+            <span className="text-xs uppercase font-bold text-olive-slate/80 block leading-tight">Daylight</span>
             <span className="font-bold text-obsidian truncate block">Sunset {plan.localSunsetTime}</span>
           </div>
         </div>
       </div>
 
       {/* Segmented View Switcher: Timeline vs Map (Stitch Design Token) */}
-      <div className="p-1 rounded-full bg-white/70 backdrop-blur-xl border border-white/80 shadow-2xs flex items-center mb-4">
+      <div className="p-1 rounded-full bg-surface/70 backdrop-blur-xl border border-edge/80 shadow-2xs flex items-center mb-4">
         <button
           type="button"
           onClick={() => setViewMode('timeline')}
           className={`flex-1 min-h-[44px] py-1.5 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
             viewMode === 'timeline'
-              ? 'bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 text-obsidian shadow-2xs border border-white/50'
+              ? 'bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 text-obsidian shadow-2xs border border-edge/50'
               : 'text-olive-slate hover:text-obsidian'
           }`}
         >
@@ -262,7 +262,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           onClick={() => setViewMode('map')}
           className={`flex-1 min-h-[44px] py-1.5 rounded-full text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
             viewMode === 'map'
-              ? 'bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 text-obsidian shadow-2xs border border-white/50'
+              ? 'bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 text-obsidian shadow-2xs border border-edge/50'
               : 'text-olive-slate hover:text-obsidian'
           }`}
         >
@@ -283,8 +283,8 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                 onClick={() => setFilter(tab)}
                 className={`shrink-0 min-h-[44px] px-4 rounded-full text-xs font-semibold capitalize transition-all ${
                   filter === tab
-                    ? 'bg-chartreuse text-obsidian shadow-xs border border-white/60'
-                    : 'bg-white/70 backdrop-blur-md text-olive-slate border border-white/80 hover:bg-white/90'
+                    ? 'bg-chartreuse text-obsidian shadow-xs border border-edge/60'
+                    : 'bg-surface/70 backdrop-blur-md text-olive-slate border border-edge/80 hover:bg-surface/90'
                 }`}
               >
                 {tab === 'all' ? t('filter.all') : t('filter.' + tab)}
@@ -305,21 +305,21 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                   {/* STOP CARD WITH GLASSMORPHISM */}
                   <article
                     aria-label={`Stop ${block.sequence}: ${vName(block.venue)}`}
-                    className={`w-full bg-white/75 backdrop-blur-xl rounded-3xl p-4 sm:p-5 border relative transition-all ${
+                    className={`w-full bg-surface/75 backdrop-blur-xl rounded-3xl p-4 sm:p-5 border relative transition-all ${
                       block.isAdapted
                         ? 'border-chartreuse/80 ring-2 ring-chartreuse/40 shadow-[0_10px_32px_rgba(184,238,48,0.22)]'
                         : isNextUp
                         ? 'border-chartreuse/90 ring-2 ring-chartreuse/40 shadow-[0_8px_28px_rgba(184,238,48,0.18)]'
-                        : 'border-white/80 shadow-glass-card'
-                    } ${isDone ? 'bg-white/60' : ''}`}
+                        : 'border-edge/80 shadow-glass-card'
+                    } ${isDone ? 'bg-surface/60' : ''}`}
                   >
                     {/* Diff highlight tag if adapted or Up Next */}
                     {block.isAdapted ? (
-                      <div className="absolute -top-2.5 right-4 bg-chartreuse text-obsidian text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs border border-white/40">
+                      <div className="absolute -top-2.5 right-4 bg-chartreuse text-obsidian text-xs font-bold px-2 py-0.5 rounded-full shadow-xs border border-edge/40">
                         {block.adaptationReason || 'Updated'}
                       </div>
                     ) : isNextUp ? (
-                      <div className="absolute -top-2.5 right-4 bg-chartreuse text-obsidian text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-xs border border-white/40">
+                      <div className="absolute -top-2.5 right-4 bg-chartreuse text-obsidian text-xs font-extrabold px-2.5 py-0.5 rounded-full shadow-xs border border-edge/40">
                         {t('card.upNext')}
                       </div>
                     ) : null}
@@ -328,8 +328,8 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                     <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`w-5 h-5 rounded-full font-bold text-[10px] flex items-center justify-center ${
-                            isDone ? 'bg-spruce text-white' : 'bg-obsidian text-white'
+                          className={`w-5 h-5 rounded-full font-bold text-xs flex items-center justify-center ${
+                            isDone ? 'bg-spruce-solid text-white' : 'bg-obsidian text-canvas'
                           }`}
                         >
                           {isDone ? '✓' : block.sequence}
@@ -340,7 +340,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                       </div>
 
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] text-olive-slate font-medium bg-white/60 backdrop-blur-xs px-2 py-0.5 rounded-full border border-white/60">
+                        <span className="text-xs text-olive-slate font-medium bg-surface/60 backdrop-blur-xs px-2 py-0.5 rounded-full border border-edge/60">
                           {block.venue.isIndoor ? 'Indoor' : 'Outdoor'}
                         </span>
 
@@ -354,7 +354,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                           className={`w-11 h-11 -my-2.5 -mr-1.5 rounded-full flex items-center justify-center transition-all ${
                             openTipBlockIds.has(block.blockId)
                               ? 'bg-chartreuse text-obsidian shadow-2xs ring-1 ring-chartreuse/60'
-                              : 'bg-white/70 backdrop-blur-xs text-olive-slate hover:text-obsidian border border-white/80 shadow-2xs'
+                              : 'bg-surface/70 backdrop-blur-xs text-olive-slate hover:text-obsidian border border-edge/80 shadow-2xs'
                           }`}
                         >
                           <Info className="w-3.5 h-3.5" />
@@ -365,7 +365,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                     {/* Venue Details & Image */}
                     <div className="flex gap-3 mb-3">
                       <div className="flex-1 min-w-0">
-                        <span className="text-[10px] uppercase font-bold text-olive-slate">
+                        <span className="text-xs uppercase font-bold text-olive-slate">
                           {block.venue.category} · {block.venue.neighborhood}
                         </span>
                         <h2
@@ -379,11 +379,11 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                           {block.whyItFits}
                         </p>
                         {block.fitLine && (
-                          <p className="text-[11px] font-semibold text-spruce mt-1.5">{block.fitLine}</p>
+                          <p className="text-xs font-semibold text-spruce mt-1.5">{block.fitLine}</p>
                         )}
                       </div>
 
-                      <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-white/60 border border-white/70 shadow-2xs shrink-0">
+                      <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-surface/60 border border-edge/70 shadow-2xs shrink-0">
                         <VenueImage
                           src={block.venue.imageUrl}
                           placeId={block.venue.placeId}
@@ -391,7 +391,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                           className={`w-full h-full object-cover ${isDone ? 'grayscale-60' : ''}`}
                         />
                         {block.venue.rating > 0 && (
-                          <span className="absolute top-1 right-1 bg-obsidian/85 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-xs shadow-2xs">
+                          <span className="absolute top-1 right-1 bg-ink/85 text-white text-xs font-bold px-1.5 py-0.2 rounded-xs shadow-2xs">
                             ★ {block.venue.rating}
                           </span>
                         )}
@@ -400,7 +400,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
 
                     {/* Solo Tip (Hidden upfront, revealed on (i) tap) */}
                     {openTipBlockIds.has(block.blockId) && (
-                      <div className="w-full p-2.5 rounded-xl bg-white/65 backdrop-blur-md border border-white/80 flex items-start gap-2 mb-3 shadow-2xs animate-fade-in">
+                      <div className="w-full p-2.5 rounded-xl bg-surface/65 backdrop-blur-md border border-edge/80 flex items-start gap-2 mb-3 shadow-2xs animate-fade-in">
                         <Info className="w-3.5 h-3.5 text-spruce shrink-0 mt-0.5" />
                         <p className="text-xs text-olive-slate leading-relaxed">
                           <strong className="text-obsidian font-semibold">Tip: </strong>
@@ -417,7 +417,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                         rel="noopener noreferrer"
                         onClick={() => onMapsClick(block)}
                         aria-label={`Open ${vName(block.venue)} in Maps`}
-                        className="min-h-[44px] rounded-full bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-transform shadow-[0_4px_14px_rgba(184,238,48,0.35)] hover:shadow-[0_6px_18px_rgba(184,238,48,0.45)]"
+                        className="min-h-[44px] rounded-full bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-edge/60 text-obsidian text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-transform shadow-[0_4px_14px_rgba(184,238,48,0.35)] hover:shadow-[0_6px_18px_rgba(184,238,48,0.45)]"
                       >
                         <span>Maps</span>
                         <ExternalLink className="w-3 h-3" />
@@ -429,7 +429,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                         disabled={isOffline || isDone}
                         aria-label={`Swap, ${vName(block.venue)}`}
                         title={isOffline ? 'Reconnect to swap' : undefined}
-                        className="min-h-[44px] rounded-full bg-white/70 backdrop-blur-md text-obsidian text-xs font-semibold border border-white/80 flex items-center justify-center gap-1 hover:bg-white/90 active:scale-95 transition-transform shadow-2xs disabled:opacity-45 disabled:cursor-not-allowed"
+                        className="min-h-[44px] rounded-full bg-surface/70 backdrop-blur-md text-obsidian text-xs font-semibold border border-edge/80 flex items-center justify-center gap-1 hover:bg-surface/90 active:scale-95 transition-transform shadow-2xs disabled:opacity-45 disabled:cursor-not-allowed"
                       >
                         <RefreshCw className="w-3 h-3" />
                         <span>{t('card.swap')}</span>
@@ -442,8 +442,8 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                         aria-label={isDone ? `Done, ${vName(block.venue)}` : `Mark done, ${vName(block.venue)}`}
                         className={`min-h-[44px] rounded-full text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition-transform ${
                           isDone
-                            ? 'bg-spruce text-white shadow-xs'
-                            : 'bg-white/70 backdrop-blur-md text-olive-slate border border-white/80 hover:bg-white/90 shadow-2xs'
+                            ? 'bg-spruce-solid text-white shadow-xs'
+                            : 'bg-surface/70 backdrop-blur-md text-olive-slate border border-edge/80 hover:bg-surface/90 shadow-2xs'
                         }`}
                       >
                         {isDone ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />}
@@ -451,12 +451,12 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                       </button>
                     </div>
                     {/* Getting there: public links, no key needed */}
-                    <div className="mt-2.5 flex items-center gap-2 flex-wrap text-[11px]">
+                    <div className="mt-2.5 flex items-center gap-2 flex-wrap text-xs">
                       <span className="text-olive-slate font-semibold">Get there:</span>
                       <a href={transitUrl(block.venue)} target="_blank" rel="noopener noreferrer" aria-label={`Metro / bus directions to ${vName(block.venue)}`}
-                        className="min-h-[36px] px-3 inline-flex items-center rounded-full bg-white/80 border border-white/80 font-semibold text-obsidian hover:bg-white">Metro / bus</a>
+                        className="min-h-[44px] px-3 inline-flex items-center rounded-full bg-surface/80 border border-edge/80 font-semibold text-obsidian hover:bg-surface">Metro / bus</a>
                       <a href={uberUrl(block.venue)} target="_blank" rel="noopener noreferrer" aria-label={`Uber ride to ${vName(block.venue)}`}
-                        className="min-h-[36px] px-3 inline-flex items-center rounded-full bg-white/80 border border-white/80 font-semibold text-obsidian hover:bg-white">Uber</a>
+                        className="min-h-[44px] px-3 inline-flex items-center rounded-full bg-surface/80 border border-edge/80 font-semibold text-obsidian hover:bg-surface">Uber</a>
                       <span className="text-olive-slate">Auto-rickshaw: show the drop-off on Maps and agree the fare first.</span>
                     </div>
                     {(() => {
@@ -469,7 +469,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                           {flags.length > 0 && (
                             <ul aria-label="Good to know" className="flex flex-col gap-1.5">
                               {flags.map(f => (
-                                <li key={f.id} className="text-[11px] leading-snug text-amber-950 bg-amber-50 border border-amber-200 rounded-xl px-2.5 py-1.5 flex gap-1.5 items-start">
+                                <li key={f.id} className="text-xs leading-snug text-amber-950 bg-amber-50 border border-amber-200 rounded-xl px-2.5 py-1.5 flex gap-1.5 items-start">
                                   <Info className="w-3.5 h-3.5 shrink-0 mt-px" aria-hidden="true" />
                                   <span>{t(f.key).replace('{time}', f.time ?? '')}</span>
                                 </li>
@@ -479,11 +479,11 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                           <div className="flex gap-2 flex-wrap">
                             {flags.some(f => f.id === 'ride_back') && (
                               <a href={rideBackUrl(plan.calibration.anchorCoords)} target="_blank" rel="noopener noreferrer"
-                                className="min-h-[44px] px-3.5 inline-flex items-center rounded-full bg-obsidian text-white text-[11px] font-bold">{t('ride.back')}</a>
+                                className="min-h-[44px] px-3.5 inline-flex items-center rounded-full bg-obsidian text-canvas text-xs font-bold">{t('ride.back')}</a>
                             )}
                             {heading && contact && (
                               <a href={whatsappLink(headingToMessage(vName(block.venue), block.timeLabel.split(' – ')[0], block.venue.mapsUrl), contact.phone)} target="_blank" rel="noopener noreferrer"
-                                className="min-h-[44px] px-3.5 inline-flex items-center rounded-full bg-white/80 border border-white/80 text-[11px] font-bold text-obsidian hover:bg-white">
+                                className="min-h-[44px] px-3.5 inline-flex items-center rounded-full bg-surface/80 border border-edge/80 text-xs font-bold text-obsidian hover:bg-surface">
                                 {t('ride.tell').replace('{name}', contact.name || t('ride.tellContact'))}
                               </a>
                             )}
@@ -496,7 +496,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                   {/* Transit Connector */}
                   {idx < filteredBlocks.length - 1 && (
                     <div className="flex items-center justify-center py-0.5">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/65 backdrop-blur-md text-olive-slate text-[11px] border border-white/70 shadow-2xs">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface/65 backdrop-blur-md text-olive-slate text-xs border border-edge/70 shadow-2xs">
                         <Footprints className="w-3 h-3 text-spruce" />
                         <span>{filteredBlocks[idx + 1].transitFromPrev}</span>
                         <span className="text-card-border">·</span>
@@ -510,7 +510,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           </div>
 
           {plan.needsTomorrow && (
-            <div className="mt-5 p-4 rounded-2xl bg-white/80 border border-white/80 shadow-glass-card flex gap-3">
+            <div className="mt-5 p-4 rounded-2xl bg-surface/80 border border-edge/80 shadow-glass-card flex gap-3">
               <Moon className="w-5 h-5 text-spruce shrink-0" aria-hidden="true" />
               <div>
                 <h4 className="font-bold text-sm text-obsidian">It’s a little late for a daylight plan</h4>
@@ -523,7 +523,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           )}
 
           {plan.blocks.length > 0 && plan.blocks.every(b => b.status === 'completed' || b.status === 'skipped') && (
-            <div className="mt-5 p-4 rounded-2xl bg-white/80 border border-white/80 shadow-glass-card flex gap-3">
+            <div className="mt-5 p-4 rounded-2xl bg-surface/80 border border-edge/80 shadow-glass-card flex gap-3">
               <PartyPopper className="w-5 h-5 text-spruce shrink-0" aria-hidden="true" />
               <div>
                 <h4 className="font-bold text-sm text-obsidian">That’s the day. Nicely paced.</h4>
@@ -532,7 +532,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                   <button type="button" disabled={busy || isOffline} onClick={onAddBonus} className="min-h-[44px] px-4 rounded-full bg-chartreuse text-obsidian text-xs font-bold flex items-center gap-1.5 disabled:opacity-50">
                     <Plus className="w-4 h-4" aria-hidden="true" /> One bonus stop
                   </button>
-                  <button type="button" onClick={() => onNewDay(true)} className="min-h-[44px] px-4 rounded-full bg-white border border-card-border text-obsidian text-xs font-bold flex items-center gap-1.5">
+                  <button type="button" onClick={() => onNewDay(true)} className="min-h-[44px] px-4 rounded-full bg-surface border border-card-border text-obsidian text-xs font-bold flex items-center gap-1.5">
                     <CalendarPlus className="w-4 h-4" aria-hidden="true" /> Tomorrow
                   </button>
                 </div>
@@ -541,21 +541,21 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
           )}
 
           {/* Understated Glass End Action */}
-          <div className="mt-6 mb-2 p-4 rounded-2xl bg-white/75 backdrop-blur-xl border border-white/80 flex items-center justify-between gap-3 shadow-glass-card">
+          <div className="mt-6 mb-2 p-4 rounded-2xl bg-surface/75 backdrop-blur-xl border border-edge/80 flex items-center justify-between gap-3 shadow-glass-card">
             <div>
               <h4 className="font-bold text-xs text-obsidian">{t('today.needAdjust')}</h4>
-              <p className="text-[11px] text-olive-slate">Rain, low battery, or change of pace.</p>
+              <p className="text-xs text-olive-slate">Rain, low battery, or change of pace.</p>
             </div>
             <button
               type="button"
               onClick={onOpenAdapt}
-              className="min-h-[44px] px-4 rounded-full bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold shrink-0 active:scale-95 transition-transform shadow-[0_4px_14px_rgba(184,238,48,0.35)] hover:shadow-[0_6px_18px_rgba(184,238,48,0.45)]"
+              className="min-h-[44px] px-4 rounded-full bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-edge/60 text-obsidian text-xs font-bold shrink-0 active:scale-95 transition-transform shadow-[0_4px_14px_rgba(184,238,48,0.35)] hover:shadow-[0_6px_18px_rgba(184,238,48,0.45)]"
             >
               {t('today.adjust')}
             </button>
           </div>
 
-          <p className="mt-4 mb-1 px-1 text-[11px] leading-relaxed text-olive-slate flex gap-1.5">
+          <p className="mt-4 mb-1 px-1 text-xs leading-relaxed text-olive-slate flex gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-spruce shrink-0 mt-0.5" aria-hidden="true" />
             <span>
               {plan.dataSource === 'google_places' ? <><span translate="no" className="notranslate">Google Maps</span> place data. </> : 'Hours from a curated listing — confirm in Maps. '}
@@ -569,7 +569,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
       {viewMode === 'map' && (
         <section className="flex-1 flex flex-col space-y-3.5 animate-fade-in">
           {/* Stylized Visual Map Canvas */}
-          <div className="relative w-full h-84 rounded-3xl overflow-hidden bg-recessed border border-white/80 shadow-glass-card select-none">
+          <div className="relative w-full h-84 rounded-3xl overflow-hidden bg-recessed border border-edge/80 shadow-glass-card select-none">
             {/* Background Map Grid & Vector Art */}
             <svg className="absolute inset-0 w-full h-full object-cover" viewBox="0 0 380 340" fill="none">
               <defs>
@@ -670,14 +670,14 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                       isSelected
                         ? 'bg-chartreuse text-obsidian border-obsidian scale-110 ring-2 ring-chartreuse/60 shadow-[0_6px_20px_rgba(184,238,48,0.5)]'
                         : isDone
-                        ? 'bg-spruce text-white border-white'
-                        : 'bg-white text-obsidian border-card-border hover:scale-105'
+                        ? 'bg-spruce-solid text-white border-edge'
+                        : 'bg-surface text-obsidian border-card-border hover:scale-105'
                     }`}
                   >
                     <span>{isDone ? '✓' : `0${b.sequence}`}</span>
                   </div>
 
-                  <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-obsidian/80 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md shadow-2xs pointer-events-none">
+                  <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-ink/80 backdrop-blur-xs text-white text-xs font-bold px-1.5 py-0.5 rounded-md shadow-2xs pointer-events-none">
                     {b.venue.neighborhood}
                   </span>
                 </div>
@@ -687,9 +687,9 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
 
           {/* Selected Pin Focus Glass Card */}
           {selectedMapBlock && (
-            <div className="bg-white/80 backdrop-blur-2xl rounded-3xl p-4 border border-white/85 shadow-glass-card animate-slide-up">
+            <div className="bg-surface/80 backdrop-blur-2xl rounded-3xl p-4 border border-edge/85 shadow-glass-card animate-slide-up">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] uppercase font-bold text-olive-slate bg-white/70 px-2.5 py-0.5 rounded-full border border-white/80">
+                <span className="text-xs uppercase font-bold text-olive-slate bg-surface/70 px-2.5 py-0.5 rounded-full border border-edge/80">
                   Stop {selectedMapBlock.sequence} · {selectedMapBlock.timeLabel}
                 </span>
                 <span className="text-xs font-semibold text-spruce">
@@ -698,7 +698,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
               </div>
 
               <div className="flex gap-3 mb-3">
-                <div className="w-16 h-16 rounded-xl overflow-hidden bg-white/60 shrink-0 border border-white/80">
+                <div className="w-16 h-16 rounded-xl overflow-hidden bg-surface/60 shrink-0 border border-edge/80">
                   <img
                     src={selectedMapBlock.venue.imageUrl}
                     alt={vName(selectedMapBlock.venue)}
@@ -721,7 +721,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                   onClick={() => onMapsClick(selectedMapBlock)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="h-9 rounded-full bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-white/60 text-obsidian text-xs font-bold flex items-center justify-center gap-1 shadow-glass-cta active:scale-95 transition-all"
+                  className="h-9 rounded-full bg-linear-to-r from-chartreuse/95 to-[#A3D70F]/90 backdrop-blur-md border border-edge/60 text-obsidian text-xs font-bold flex items-center justify-center gap-1 shadow-glass-cta active:scale-95 transition-all"
                 >
                   <span>Maps</span>
                   <ExternalLink className="w-3 h-3" />
@@ -730,7 +730,7 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setViewMode('timeline')}
-                  className="h-9 rounded-full bg-white/70 backdrop-blur-md text-obsidian text-xs font-semibold border border-white/80 flex items-center justify-center gap-1 hover:bg-white/90 active:scale-95 transition-all shadow-2xs"
+                  className="h-9 rounded-full bg-surface/70 backdrop-blur-md text-obsidian text-xs font-semibold border border-edge/80 flex items-center justify-center gap-1 hover:bg-surface/90 active:scale-95 transition-all shadow-2xs"
                 >
                   <span>Timeline</span>
                 </button>
@@ -740,8 +740,8 @@ export const ActiveCanvasView: React.FC<ActiveCanvasViewProps> = ({
                   onClick={() => onToggleBlockDone(selectedMapBlock.blockId)}
                   className={`h-9 px-3 rounded-full text-xs font-semibold flex items-center justify-center gap-1 active:scale-95 transition-all ${
                     selectedMapBlock.status === 'completed'
-                      ? 'bg-spruce/90 text-white'
-                      : 'bg-white/70 backdrop-blur-md text-olive-slate border border-white/80 hover:bg-white/90'
+                      ? 'bg-spruce-solid/90 text-white'
+                      : 'bg-surface/70 backdrop-blur-md text-olive-slate border border-edge/80 hover:bg-surface/90'
                   }`}
                 >
                   {selectedMapBlock.status === 'completed' ? 'Done' : 'Mark done'}

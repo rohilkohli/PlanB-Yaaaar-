@@ -43,7 +43,7 @@ export const SwapBottomSheet: React.FC<Props> = ({ currentPlan, block, isOffline
           <button
             key={r.id} type="button" role="radio" aria-checked={reason === r.id} onClick={() => setReason(r.id)}
             className={`shrink-0 min-h-[44px] px-4 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all ${
-              reason === r.id ? (r.id === 'closed' ? 'bg-red-700 text-white' : 'bg-obsidian text-white') : 'bg-white/80 text-obsidian border border-white/80 hover:bg-white'
+              reason === r.id ? (r.id === 'closed' ? 'bg-danger text-white' : 'bg-obsidian text-canvas') : 'bg-surface/80 text-obsidian border border-edge/80 hover:bg-surface'
             }`}
           >
             {r.id === 'closed' && <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />}
@@ -61,11 +61,11 @@ export const SwapBottomSheet: React.FC<Props> = ({ currentPlan, block, isOffline
 
       <div className="space-y-3" aria-live="polite" aria-busy={alts === null}>
         {alts === null && [0, 1].map(i => (
-          <div key={i} className="h-44 rounded-2xl bg-white/60 border border-white/80 animate-pulse" aria-hidden="true" />
+          <div key={i} className="h-44 rounded-2xl bg-surface/60 border border-edge/80 animate-pulse" aria-hidden="true" />
         ))}
 
         {alts && alts.length === 0 && (
-          <div className="p-5 text-center bg-white/70 border border-white/80 rounded-2xl text-sm text-olive-slate">
+          <div className="p-5 text-center bg-surface/70 border border-edge/80 rounded-2xl text-sm text-olive-slate">
             {error || 'No open backup nearby right now. Your current stop stays in place.'}
           </div>
         )}
@@ -75,15 +75,15 @@ export const SwapBottomSheet: React.FC<Props> = ({ currentPlan, block, isOffline
         )}
 
         {alts?.map(alt => (
-          <article key={alt.placeId} className="bg-white/75 backdrop-blur-xl rounded-2xl p-3.5 border border-white/80 flex flex-col gap-2.5 shadow-glass-card">
-            <div className="relative w-full h-28 rounded-xl overflow-hidden border border-white/60">
+          <article key={alt.placeId} className="bg-surface/75 backdrop-blur-xl rounded-2xl p-3.5 border border-edge/80 flex flex-col gap-2.5 shadow-glass-card">
+            <div className="relative w-full h-28 rounded-xl overflow-hidden border border-edge/60">
               <VenueImage src={alt.imageUrl} className="w-full h-full object-cover" />
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] uppercase font-bold text-olive-slate tracking-wide">{alt.category} · {alt.neighborhood}</p>
+              <p className="text-xs uppercase font-bold text-olive-slate tracking-wide">{alt.category} · {alt.neighborhood}</p>
               <h3 className="font-bold text-sm text-obsidian">{alt.name}</h3>
               <p className="text-xs text-olive-slate mt-0.5 line-clamp-2">{alt.whyItFits}</p>
-              <p className="text-[11px] text-olive-slate mt-1 flex items-center gap-1">
+              <p className="text-xs text-olive-slate mt-1 flex items-center gap-1">
                 <Clock className="w-3 h-3" aria-hidden="true" />
                 Open until {openUntilLabel(alt)} · {alt.source === 'google_places' ? 'Verified via Google Places' : 'Curated listing'}
               </p>

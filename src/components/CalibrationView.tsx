@@ -179,7 +179,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
         <button
           type="button"
           onClick={onOpenGuardrails}
-          className="w-11 h-11 rounded-full bg-white/75 backdrop-blur-xl border border-white/80 flex items-center justify-center text-obsidian hover:bg-white/90 active:scale-95 transition-all shadow-xs"
+          className="w-11 h-11 rounded-full bg-surface/75 backdrop-blur-xl border border-edge/80 flex items-center justify-center text-obsidian hover:bg-surface/90 active:scale-95 transition-all shadow-xs"
           aria-label={t('calib.prefs')}
         >
           <Sliders className="w-4 h-4" />
@@ -213,7 +213,7 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
             {t('calib.where')}
           </h1>
           {tripNote && (
-            <div role="status" className="-mt-2 mb-3 p-3 rounded-2xl bg-white/85 border border-card-border">
+            <div role="status" className="-mt-2 mb-3 p-3 rounded-2xl bg-surface/85 border border-card-border">
               <p className="text-sm font-bold text-obsidian">{tripNote.title}</p>
               {tripNote.detail && <p className="text-xs text-olive-slate mt-0.5">{tripNote.detail}</p>}
               <button type="button" onClick={tripNote.onReset} className="mt-1 min-h-[44px] -mb-2 text-xs font-semibold underline text-obsidian">{t('trip.reset')}</button>
@@ -236,10 +236,10 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
               aria-describedby={shown ? 'city-error' : undefined}
               aria-autocomplete="list"
               aria-controls={suggestions.length > 0 ? 'city-suggestions' : undefined}
-              className={`w-full min-h-[48px] pl-10 pr-3.5 rounded-2xl bg-white/80 backdrop-blur-xl border text-sm text-obsidian placeholder-olive-slate/70 focus:outline-hidden focus:ring-2 focus:ring-chartreuse shadow-glass-card ${shown ? 'border-red-600' : 'border-white/80'}`}
+              className={`w-full min-h-[48px] pl-10 pr-3.5 rounded-2xl bg-surface/80 backdrop-blur-xl border text-sm text-obsidian placeholder-olive-slate/70 focus:outline-hidden focus:ring-2 focus:ring-chartreuse shadow-glass-card ${shown ? 'border-red-600' : 'border-edge/80'}`}
             />
             {suggestions.length > 0 && (
-              <ul id="city-suggestions" role="listbox" aria-label="Suggestions" className="absolute z-30 left-0 right-0 mt-1 rounded-2xl bg-white/95 backdrop-blur-xl border border-card-border shadow-float overflow-hidden">
+              <ul id="city-suggestions" role="listbox" aria-label="Suggestions" className="absolute z-30 left-0 right-0 mt-1 rounded-2xl bg-surface/95 backdrop-blur-xl border border-card-border shadow-float overflow-hidden">
                 {suggestions.map(s => (
                   <li key={s.text} role="option" aria-selected={false}>
                     <button
@@ -264,13 +264,13 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
               type="button"
               onClick={handleGps}
               disabled={gpsLoading}
-              className="w-full min-h-[48px] px-3.5 rounded-2xl bg-white/70 backdrop-blur-xl border border-white/80 shadow-glass-card flex items-center justify-between hover:bg-white/85 active:scale-[0.99] transition-all text-left"
+              className="w-full min-h-[48px] px-3.5 rounded-2xl bg-surface/70 backdrop-blur-xl border border-edge/80 shadow-glass-card flex items-center justify-between hover:bg-surface/85 active:scale-[0.99] transition-all text-left"
             >
               <span className="flex items-center gap-2.5">
                 <Navigation className={`w-4 h-4 text-spruce ${gpsLoading ? 'animate-spin' : ''}`} aria-hidden="true" />
                 <span className="text-sm font-semibold text-obsidian">{gpsLoading ? 'Locating…' : t('calib.useLocation')}</span>
               </span>
-              <span className="text-[11px] font-bold text-spruce">Once, not tracked</span>
+              <span className="text-xs font-bold text-spruce">Once, not tracked</span>
             </button>
             <p className="text-xs text-olive-slate px-2 mt-1.5 leading-snug" aria-live="polite">{gpsNotice}</p>
           </div>
@@ -292,13 +292,13 @@ export const CalibrationView: React.FC<Props> = ({ preferences, onOpenGuardrails
                 { id: 'end', label: 'Finish by', value: endTime, set: setEndTime }
               ].map(f => (
                 <label key={f.id} htmlFor={`t-${f.id}`} className="block">
-                  <span className="text-[11px] font-semibold text-olive-slate">{f.label}</span>
+                  <span className="text-xs font-semibold text-olive-slate">{f.label}</span>
                   <input
                     id={`t-${f.id}`}
                     type="time"
                     value={f.value}
                     onChange={e => { touched(); timesTouched.current = true; f.set(e.target.value || f.value); }}
-                    className="mt-1 w-full min-h-[48px] px-3 rounded-2xl bg-white/80 border border-white/80 text-sm font-semibold text-obsidian focus:outline-hidden focus:ring-2 focus:ring-chartreuse shadow-glass-card"
+                    className="mt-1 w-full min-h-[48px] px-3 rounded-2xl bg-surface/80 border border-edge/80 text-sm font-semibold text-obsidian focus:outline-hidden focus:ring-2 focus:ring-chartreuse shadow-glass-card"
                   />
                 </label>
               ))}

@@ -85,7 +85,7 @@ export const SharedPage: React.FC<{ kind: 'share' | 'recap'; token: string }> = 
       )}
 
       {kind === 'share' && (
-        <section aria-label="Last known location" className="mt-4 p-3.5 rounded-2xl bg-white/85 border border-card-border">
+        <section aria-label="Last known location" className="mt-4 p-3.5 rounded-2xl bg-surface/85 border border-card-border">
           {data.location ? (
             <>
               <p className="text-sm font-bold text-obsidian flex items-center gap-2"><MapPin className="w-4 h-4 text-spruce" aria-hidden="true" />Last seen {ago(age as number)}</p>
@@ -101,13 +101,13 @@ export const SharedPage: React.FC<{ kind: 'share' | 'recap'; token: string }> = 
         {view.blocks.map(b => {
           const name = b.name ?? (b.placeId ? names[b.placeId] : undefined) ?? 'A local stop';
           return (
-            <li key={b.id} className="p-3.5 rounded-2xl bg-white/85 border border-card-border">
+            <li key={b.id} className="p-3.5 rounded-2xl bg-surface/85 border border-card-border">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-olive-slate">{minutesToTimeString(b.start)} – {minutesToTimeString(b.end)} · {CAT[b.category] ?? 'Stop'}</p>
                   <h3 className="font-bold text-sm text-obsidian mt-0.5" translate={b.source === 'google' ? 'no' : undefined}>{name}</h3>
                 </div>
-                <span className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold ${b.status === 'completed' ? 'bg-lime-100 text-spruce' : b.status === 'skipped' ? 'bg-gray-100 text-gray-700' : 'bg-white border border-card-border text-obsidian'}`}>{STATUS[b.status] ?? 'Up next'}</span>
+                <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-bold ${b.status === 'completed' ? 'bg-lime-100 text-spruce' : b.status === 'skipped' ? 'bg-gray-100 text-gray-700' : 'bg-surface border border-card-border text-obsidian'}`}>{STATUS[b.status] ?? 'Up next'}</span>
               </div>
               {b.note && <p className="mt-2 text-sm text-obsidian italic">“{b.note}”</p>}
               {b.placeId && <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}&query_place_id=${encodeURIComponent(b.placeId)}`} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block min-h-[44px] leading-[44px] text-xs font-semibold underline">View on <span translate="no">Google Maps</span></a>}
@@ -119,7 +119,7 @@ export const SharedPage: React.FC<{ kind: 'share' | 'recap'; token: string }> = 
       <p className="mt-6 text-xs text-olive-slate">{kind === 'share'
         ? 'This page updates by itself while sharing is on. The traveller can stop sharing at any time. PlanB is not an emergency service. In an emergency call 112.'
         : 'Shared by a PlanB traveller. This link is private to whoever has it and stops working after 30 days.'}</p>
-      <button type="button" onClick={() => navigate('/')} className="mt-4 min-h-[44px] px-5 rounded-full bg-white border border-card-border text-obsidian text-sm font-bold">Plan your own day with PlanB</button>
+      <button type="button" onClick={() => navigate('/')} className="mt-4 min-h-[44px] px-5 rounded-full bg-surface border border-card-border text-obsidian text-sm font-bold">Plan your own day with PlanB</button>
     </main>
   );
 };

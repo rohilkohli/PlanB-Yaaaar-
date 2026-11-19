@@ -17,6 +17,13 @@
   --color-coral: #f43f5e;
   --color-spruce: #4c6700;
   --color-brand-lime: #b8ee30;
+  /* Semantic roles that flip in dark mode (see the dark block below) */
+  --color-edge: #ffffff;
+  --color-backdrop: #eef2e6;
+  /* Fixed fills: the same in both themes because they always carry light or dark text of their own */
+  --color-ink: #191d17;
+  --color-danger: #b91c1c;
+  --color-spruce-solid: #4c6700;
 
   --font-sans:
     Plus Jakarta Sans Variable, Plus Jakarta Sans, system-ui, -apple-system,
@@ -88,6 +95,57 @@
 
   .pt-safe {
     padding-top: env(safe-area-inset-top, 16px);
+  }
+}
+
+
+/*
+  Dark theme (follows the phone's setting). Same brand: deep olive-black surfaces, chartreuse accent kept.
+  Roles flip: surface/edge/canvas/obsidian(text)/olive-slate/spruce. Fixed fills (ink, danger, spruce-solid) never change.
+  Every text/background pair is checked by axe in the end-to-end suite under both themes (WCAG AA, 4.5:1).
+*/
+:root { color-scheme: light dark; }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-canvas: #11140e;
+    --color-canvas-alt: #151910;
+    --color-backdrop: #0b0d08;
+    --color-surface: #1a2016;
+    --color-surface-card: #1a2016;
+    --color-edge: #343d2b;
+    --color-card-border: #2f3828;
+    --color-recessed: #1f261b;
+    --color-recessed-dark: #272f22;
+    --color-obsidian: #eef3e4;
+    --color-obsidian-deep: #070905;
+    --color-olive-slate: #bcc5a9;
+    --color-cool-gray: #a1ab92;
+    --color-spruce: #b9e24a;
+    --shadow-glass-card: 0 8px 32px 0 rgba(0, 0, 0, 0.35), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-float: 0 12px 32px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.35);
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.45);
+    --shadow-card: 0 12px 30px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3);
+    --shadow-subtle: 0 4px 16px -2px rgba(0, 0, 0, 0.4);
+
+    /* Tinted alerts: light tints become deep tints, dark text shades become light */
+    --color-amber-50: #2c230f;  --color-amber-100: #392d12; --color-amber-200: #5b4616; --color-amber-300: #7d611a;
+    --color-amber-800: #fcd98a; --color-amber-900: #fde4a8; --color-amber-950: #fef0c7;
+    --color-red-50: #371616;    --color-red-200: #7a2c2c;   --color-red-300: #9c3b3b;
+    --color-red-600: #fca5a5;   --color-red-700: #fca5a5;   --color-red-800: #fecaca;  --color-red-900: #fee2e2;
+    --color-sky-50: #0e2530;    --color-sky-200: #1d4960;   --color-sky-600: #7dd3fc;  --color-sky-700: #a5e0fd;  --color-sky-950: #e0f2fe;
+    --color-lime-50: #1d290e;   --color-lime-100: #273711; --color-lime-200: #3b5216;
+    --color-gray-50: #1d2319;   --color-gray-100: #262d21;  --color-gray-600: #b3bba5; --color-gray-700: #c9d0bc; --color-gray-800: #dce2d0; --color-gray-900: #eef3e4;
+  }
+
+  /* Dark text/ink on the lime accent stays dark even though the text colour roles flipped */
+  /* Match real classes only (a leading space or the start of the attribute): "selection:bg-chartreuse" on the app root must NOT match. */
+  .bg-chartreuse,
+  [class^="bg-chartreuse"], [class*=" bg-chartreuse"],
+  [class^="from-chartreuse"], [class*=" from-chartreuse"] {
+    --color-obsidian: #191d17;
+    --color-olive-slate: #434935;
+    --color-spruce: #4c6700;
   }
 }
 
@@ -181,7 +239,7 @@ button, a {
 
 /* Visible keyboard focus everywhere */
 :focus-visible:not([tabindex="-1"]) {
-  outline: 3px solid #191D17;
+  outline: 3px solid var(--color-obsidian);
   outline-offset: 2px;
   border-radius: 12px;
 }

@@ -93,7 +93,7 @@ export const ExploreView: React.FC<ExploreViewProps> = ({ onLoadCity, onBackToPl
               <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/25 to-transparent" />
               
               <div className="absolute top-3 right-3">
-                <span className="px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1 border border-white/30 shadow-2xs">
+                <span className="px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-bold flex items-center gap-1 border border-white/30 shadow-2xs">
                   <Sun className="w-3 h-3 text-chartreuse" />
                   <span>Sunset {minutesToTimeString(sunsetFor(city, today))}</span>
                 </span>
@@ -109,24 +109,24 @@ export const ExploreView: React.FC<ExploreViewProps> = ({ onLoadCity, onBackToPl
             <div className="p-4 flex flex-col gap-3">
               <div className="grid grid-cols-3 gap-2 py-1 px-2.5 rounded-2xl bg-white/60 backdrop-blur-md border border-white/70 text-center text-xs">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-olive-slate block">Walk</span>
+                  <span className="text-xs uppercase font-bold text-olive-slate block">Walk</span>
                   <span className="font-bold text-obsidian flex items-center justify-center gap-1 mt-0.5">
                     <Footprints className="w-3 h-3 text-spruce" aria-hidden="true" />
                     On foot
                   </span>
                 </div>
                 <div className="border-x border-card-border/60">
-                  <span className="text-[10px] uppercase font-bold text-olive-slate/80 block">Stops</span>
+                  <span className="text-xs uppercase font-bold text-olive-slate/80 block">Stops</span>
                   <span className="font-bold text-obsidian block mt-0.5">{count} places</span>
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-olive-slate block">Day</span>
+                  <span className="text-xs uppercase font-bold text-olive-slate block">Day</span>
                   <span className="font-bold text-obsidian block mt-0.5">3–4 stops</span>
                 </div>
               </div>
 
               <div className="flex items-center justify-between gap-3 pt-1">
-                <div className="flex items-center gap-1 text-[11px] text-olive-slate font-medium">
+                <div className="flex items-center gap-1 text-xs text-olive-slate font-medium">
                   <span className="px-2 py-0.5 rounded-full bg-white/70 border border-white/80">Curated</span>
                   
                 </div>

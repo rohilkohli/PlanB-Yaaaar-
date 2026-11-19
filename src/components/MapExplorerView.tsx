@@ -92,23 +92,23 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
   };
 
   return (
-    <main className="flex-1 flex flex-col relative min-h-screen overflow-hidden bg-[#F4F5F7]">
+    <main className="flex-1 flex flex-col relative min-h-screen overflow-hidden bg-recessed">
       {mapState === 'live' && <div ref={mapDiv} className="absolute inset-0 w-full h-full" role="region" aria-label="Map of nearby places" />}
       {showDrawn && <svg className="absolute inset-0 w-full h-full" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <rect width="390" height="844" fill="#F4F5F7" />
-        <g stroke="#E3E6EB" strokeWidth="12" strokeLinecap="round" fill="none"><path d="M-20 180 L140 260 L240 210 L410 280" /><path d="M70 70 L90 350 L110 500 L60 860" /><path d="M320 80 L300 320 L340 550 L310 860" /><path d="M-10 620 L150 580 L290 640 L410 590" /></g>
-        <g stroke="#FFFFFF" strokeWidth="8" strokeLinecap="round" fill="none"><path d="M-40 290 Q120 280 200 380 T420 460" /><path d="M60 40 L210 260 L380 430" /><path d="M-30 450 L120 430 L220 470 L420 440" /><path d="M120 200 L180 520 L140 780" /><path d="M220 120 L270 410 L230 730" /></g>
+        <rect width="390" height="844" fill="var(--color-recessed)" />
+        <g stroke="var(--color-recessed-dark)" strokeWidth="12" strokeLinecap="round" fill="none"><path d="M-20 180 L140 260 L240 210 L410 280" /><path d="M70 70 L90 350 L110 500 L60 860" /><path d="M320 80 L300 320 L340 550 L310 860" /><path d="M-10 620 L150 580 L290 640 L410 590" /></g>
+        <g stroke="var(--color-edge)" strokeWidth="8" strokeLinecap="round" fill="none"><path d="M-40 290 Q120 280 200 380 T420 460" /><path d="M60 40 L210 260 L380 430" /><path d="M-30 450 L120 430 L220 470 L420 440" /><path d="M120 200 L180 520 L140 780" /><path d="M220 120 L270 410 L230 730" /></g>
       </svg>}
       <p className="sr-only">Map overview of {places?.length ?? 0} places near {cityName}. The list below has the same places.</p>
 
       <header className="relative z-20 pt-3 px-5 pb-2 flex items-center justify-between gap-2">
-        <button type="button" onClick={onBack} aria-label="Go back" className="w-11 h-11 bg-white/95 backdrop-blur-md rounded-full flex items-center justify-center shadow-soft border border-black/5 active:scale-95">
+        <button type="button" onClick={onBack} aria-label="Go back" className="w-11 h-11 bg-surface/95 backdrop-blur-md rounded-full flex items-center justify-center shadow-soft border border-black/5 active:scale-95">
           <ArrowLeft className="w-5 h-5 text-gray-800" />
         </button>
         <div className="flex-1 min-w-0 text-center">
-          <h1 className="font-extrabold text-base text-obsidian truncate">{cityName}</h1>
+          <h1 className="inline-block max-w-full px-3.5 py-1 rounded-full bg-surface/90 backdrop-blur-md shadow-soft font-extrabold text-base text-obsidian truncate">{cityName}</h1>
         </div>
-        <div role="status" className="min-h-[44px] px-3 bg-white/95 rounded-full flex items-center gap-1.5 shadow-soft border border-black/5 text-xs font-bold text-obsidian">
+        <div role="status" className="min-h-[44px] px-3 bg-surface/95 rounded-full flex items-center gap-1.5 shadow-soft border border-black/5 text-xs font-bold text-obsidian">
           {weather?.available ? (<>
             {weather.rainSoon ? <CloudRain className="w-4 h-4 text-sky-700" aria-hidden="true" /> : <Sun className="w-4 h-4 text-orange-600" aria-hidden="true" />}
             <span>{weather.tempC !== undefined ? `${weather.tempC}°` : ''} {weather.rainSoon ? 'Rain soon' : weather.summary ?? ''}</span>
@@ -121,7 +121,7 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
           const Icon = c.icon; const on = category === c.id;
           return (
             <button key={c.id} type="button" role="radio" aria-checked={on} onClick={() => setCategory(c.id)}
-              className={`shrink-0 min-h-[44px] px-4 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-soft border ${on ? 'bg-brand-lime text-[#151f00] border-white/60' : 'bg-white/95 text-gray-800 border-black/5'}`}>
+              className={`shrink-0 min-h-[44px] px-4 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-soft border ${on ? 'bg-brand-lime text-[#151f00] border-edge/60' : 'bg-surface/95 text-gray-800 border-black/5'}`}>
               <Icon className="w-4 h-4" aria-hidden="true" />{c.label}
             </button>
           );
@@ -134,7 +134,7 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
         {pins.items.map(({ p, x, y }, i) => (
           <button key={p.id} type="button" onClick={() => openDetails(p)} aria-label={`${i + 1}, ${p.name}, ${p.rating} stars`}
             className="absolute pointer-events-auto w-11 h-11 flex items-center justify-center" style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%,-50%)' }}>
-            <span className={`w-7 h-7 rounded-full flex items-center justify-center border-2 border-white shadow-md text-[11px] font-bold text-white ${p.id === selected ? 'bg-[#EA6825] scale-125' : 'bg-[#18191B]'} transition-transform`}>
+            <span className={`w-7 h-7 rounded-full flex items-center justify-center border-2 border-white shadow-md text-xs font-bold text-white ${p.id === selected ? 'bg-[#EA6825] scale-125' : 'bg-[#18191B]'} transition-transform`}>
               {i + 1}
             </span>
           </button>
@@ -143,32 +143,32 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
 
       {/* Carousel */}
       <section aria-label="Places" className="absolute bottom-0 left-0 right-0 z-20 pb-28 pt-2">
-        {places === null && <div className="mx-5 h-40 rounded-3xl bg-white/80 animate-pulse" aria-busy="true" />}
+        {places === null && <div className="mx-5 h-40 rounded-3xl bg-surface/80 animate-pulse" aria-busy="true" />}
         {places && places.length === 0 && (
-          <div role="status" className="mx-5 p-5 rounded-3xl bg-white/95 shadow-card text-sm text-olive-slate">{note || 'No places found.'}</div>
+          <div role="status" className="mx-5 p-5 rounded-3xl bg-surface/95 shadow-card text-sm text-olive-slate">{note || 'No places found.'}</div>
         )}
         {places && places.length > 0 && (
           <>
-            {note && <p className="mx-5 mb-1.5 text-[11px] text-olive-slate bg-white/90 rounded-full px-3 py-1 inline-block">{note}</p>}
-            {mapState === 'drawing' && source === 'google_places' && <p role="status" className="mx-5 mb-1.5 text-[11px] text-olive-slate bg-white/90 rounded-full px-3 py-1 inline-block">The map is unavailable right now. Showing the list.</p>}
+            {note && <p className="mx-5 mb-1.5 text-xs text-olive-slate bg-surface/90 rounded-full px-3 py-1 inline-block">{note}</p>}
+            {mapState === 'drawing' && source === 'google_places' && <p role="status" className="mx-5 mb-1.5 text-xs text-olive-slate bg-surface/90 rounded-full px-3 py-1 inline-block">The map is unavailable right now. Showing the list.</p>}
             <ul className="flex items-stretch gap-3.5 px-5 overflow-x-auto no-scrollbar snap-x snap-mandatory">
               {places.map((p, i) => (
                 <li key={p.id} className="shrink-0 w-[280px] snap-center">
                   <button type="button" onClick={() => openDetails(p)} aria-current={p.id === selected}
-                    className={`w-full text-left bg-white rounded-[26px] p-4 shadow-card border active:scale-[0.98] transition-all ${p.id === selected ? 'border-chartreuse ring-2 ring-chartreuse/50' : 'border-black/5'}`}>
+                    className={`w-full text-left bg-surface rounded-[26px] p-4 shadow-card border active:scale-[0.98] transition-all ${p.id === selected ? 'border-chartreuse ring-2 ring-chartreuse/50' : 'border-black/5'}`}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <span className="text-[11px] font-bold text-spruce">#{i + 1} · {CATS.find(c => c.id === p.category)!.label}</span>
-                        <h2 className="text-[17px] font-bold text-gray-900 leading-snug">{p.name}</h2>
+                        <span className="text-xs font-bold text-spruce">#{i + 1} · {CATS.find(c => c.id === p.category)!.label}</span>
+                        <h2 className="text-[1.0625rem] font-bold text-gray-900 leading-snug">{p.name}</h2>
                         <p className="text-xs text-gray-600 mt-0.5 line-clamp-1">{p.address}</p>
                       </div>
-                      <span className="shrink-0 bg-white border border-black/10 px-2.5 py-1 rounded-full text-[11px] font-bold text-gray-800 flex items-center gap-1"><MapPin className="w-3 h-3 text-[#EA6825]" aria-hidden="true" />{p.distanceKm} km</span>
+                      <span className="shrink-0 bg-surface border border-black/10 px-2.5 py-1 rounded-full text-xs font-bold text-gray-800 flex items-center gap-1"><MapPin className="w-3 h-3 text-[#EA6825]" aria-hidden="true" />{p.distanceKm} km</span>
                     </div>
                     <div className="flex items-center gap-2 mt-3 text-xs font-semibold text-gray-700">
                       <span className="flex items-center gap-1"><Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" aria-hidden="true" />{p.rating.toFixed(1)}</span>
                       <span className="text-gray-600">({p.reviewCount.toLocaleString()} reviews)</span>
                       {p.priceLevel && <span className="text-gray-700">· {p.priceLevel}</span>}
-                      {p.openNow !== undefined && <span className={`ml-auto px-2 py-0.5 rounded-full text-[11px] font-bold ${p.openNow ? 'bg-[#b8ee30]/40 text-[#3a4f00]' : 'bg-gray-100 text-gray-700'}`}>{p.openNow ? 'Open' : 'Closed'}</span>}
+                      {p.openNow !== undefined && <span className={`ml-auto px-2 py-0.5 rounded-full text-xs font-bold ${p.openNow ? 'bg-[#b8ee30]/40 text-[#3a4f00]' : 'bg-gray-100 text-gray-700'}`}>{p.openNow ? 'Open' : 'Closed'}</span>}
                     </div>
                   </button>
                 </li>
@@ -176,7 +176,7 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
             </ul>
           </>
         )}
-        <p className="mx-5 mt-2 text-[11px] text-olive-slate">{source === 'google_places' ? <>Place data from Google Maps · <DataSourcesLink /></> : <>Curated listings · <DataSourcesLink /></>}</p>
+        <p className="mx-5 mt-2 text-xs text-olive-slate">{source === 'google_places' ? <>Place data from Google Maps · <DataSourcesLink /></> : <>Curated listings · <DataSourcesLink /></>}</p>
       </section>
 
       {open && active && (
@@ -187,9 +187,9 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
             {(details?.openNow ?? active.openNow) !== undefined && <span className="ml-auto text-xs font-bold">{(details?.openNow ?? active.openNow) ? 'Open now' : 'Closed now'}</span>}
           </div>
           <div className="grid grid-cols-3 gap-2 mb-4">
-            <a href={active.mapsUrl} target="_blank" rel="noopener noreferrer" className="min-h-[56px] rounded-2xl bg-[#b8ee30] text-[#151f00] text-[11px] font-bold flex flex-col items-center justify-center gap-0.5"><Navigation className="w-5 h-5" aria-hidden="true" />Directions</a>
-            {details?.phone ? <a href={`tel:${details.phone.replace(/\s/g, '')}`} className="min-h-[56px] rounded-2xl bg-white border border-black/10 text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5"><Phone className="w-5 h-5" aria-hidden="true" />Call</a> : <span className="min-h-[56px] rounded-2xl bg-gray-50 border border-black/5 text-[11px] text-gray-600 flex flex-col items-center justify-center gap-0.5"><Phone className="w-5 h-5" aria-hidden="true" />No phone</span>}
-            {details?.website ? <a href={details.website} target="_blank" rel="noopener noreferrer" className="min-h-[56px] rounded-2xl bg-white border border-black/10 text-[11px] font-semibold flex flex-col items-center justify-center gap-0.5"><Globe className="w-5 h-5" aria-hidden="true" />Website</a> : <span className="min-h-[56px] rounded-2xl bg-gray-50 border border-black/5 text-[11px] text-gray-600 flex flex-col items-center justify-center gap-0.5"><ExternalLink className="w-5 h-5" aria-hidden="true" />No site</span>}
+            <a href={active.mapsUrl} target="_blank" rel="noopener noreferrer" className="min-h-[56px] rounded-2xl bg-[#b8ee30] text-[#151f00] text-xs font-bold flex flex-col items-center justify-center gap-0.5"><Navigation className="w-5 h-5" aria-hidden="true" />Directions</a>
+            {details?.phone ? <a href={`tel:${details.phone.replace(/\s/g, '')}`} className="min-h-[56px] rounded-2xl bg-surface border border-black/10 text-xs font-semibold flex flex-col items-center justify-center gap-0.5"><Phone className="w-5 h-5" aria-hidden="true" />Call</a> : <span className="min-h-[56px] rounded-2xl bg-gray-50 border border-black/5 text-xs text-gray-600 flex flex-col items-center justify-center gap-0.5"><Phone className="w-5 h-5" aria-hidden="true" />No phone</span>}
+            {details?.website ? <a href={details.website} target="_blank" rel="noopener noreferrer" className="min-h-[56px] rounded-2xl bg-surface border border-black/10 text-xs font-semibold flex flex-col items-center justify-center gap-0.5"><Globe className="w-5 h-5" aria-hidden="true" />Website</a> : <span className="min-h-[56px] rounded-2xl bg-gray-50 border border-black/5 text-xs text-gray-600 flex flex-col items-center justify-center gap-0.5"><ExternalLink className="w-5 h-5" aria-hidden="true" />No site</span>}
           </div>
           {details?.hours && details.hours.length > 0 && (
             <div className="mb-4"><h3 className="text-xs font-bold text-obsidian mb-1.5">Hours</h3><ul className="text-xs text-gray-700 space-y-0.5">{details.hours.map(h => <li key={h}>{h}</li>)}</ul></div>
@@ -197,7 +197,7 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
           <div><h3 className="text-xs font-bold text-obsidian mb-1.5">Recent reviews</h3>
             {details?.reviews?.length ? (
               <ul className="space-y-2.5">{details.reviews.map((r, i) => (
-                <li key={i} className="p-3 rounded-2xl bg-white border border-black/5 text-xs text-gray-700">
+                <li key={i} className="p-3 rounded-2xl bg-surface border border-black/5 text-xs text-gray-700">
                   <p className="font-semibold text-gray-900">{'★'.repeat(Math.round(r.rating))} <span className="font-medium text-gray-600">· {r.authorUri ? <a href={r.authorUri} target="_blank" rel="noopener noreferrer" className="underline">{r.author}</a> : r.author} · {r.when} · <span translate="no" className="notranslate">Google Maps</span></span></p>
                   <p className="mt-1">{r.text}</p>
                 </li>))}</ul>

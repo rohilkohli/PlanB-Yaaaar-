@@ -25,7 +25,7 @@ export const GeneratingTransition: React.FC<Props> = ({ cityName, onCancel, isQu
     <div ref={ref} role="dialog" aria-modal="true" aria-label="Building your day" tabIndex={-1} className="fixed inset-0 z-50 bg-canvas flex flex-col px-6 pt-safe pb-safe animate-fade-in outline-hidden">
       <div className="flex items-center justify-between py-2">
         <span className="font-extrabold text-base text-obsidian tracking-tight">PlanB</span>
-        <button type="button" onClick={onCancel} aria-label="Cancel" className="w-11 h-11 rounded-full bg-white border border-card-border flex items-center justify-center text-obsidian hover:bg-recessed active:scale-90">
+        <button type="button" onClick={onCancel} aria-label="Cancel" className="w-11 h-11 rounded-full bg-surface border border-card-border flex items-center justify-center text-obsidian hover:bg-recessed active:scale-90">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -42,7 +42,7 @@ export const GeneratingTransition: React.FC<Props> = ({ cityName, onCancel, isQu
 
       <div className="mt-8 space-y-3.5" aria-hidden="true">
         {[0, 1, 2].map(i => (
-          <div key={i} className="rounded-3xl bg-white/75 border border-white/80 p-4 shadow-glass-card animate-pulse" style={{ animationDelay: `${i * 150}ms` }}>
+          <div key={i} className="rounded-3xl bg-surface/75 border border-edge/80 p-4 shadow-glass-card animate-pulse" style={{ animationDelay: `${i * 150}ms` }}>
             <div className="h-3 w-24 rounded-full bg-recessed-dark mb-3" />
             <div className="flex gap-3">
               <div className="flex-1 space-y-2">

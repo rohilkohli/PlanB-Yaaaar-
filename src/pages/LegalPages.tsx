@@ -33,7 +33,7 @@ const Shell: React.FC<{ title: string; children: React.ReactNode }> = ({ title, 
   <main className="flex-1 px-5 pt-3 pb-36">
     <header className="sticky top-0 -mx-5 px-5 py-2 bg-canvas/85 backdrop-blur-2xl border-b border-card-border/70 z-20 flex items-center gap-2 mb-4">
       <button type="button" onClick={() => (window.history.length > 1 ? window.history.back() : navigate('/'))} aria-label="Go back"
-        className="w-11 h-11 -ml-2 rounded-full flex items-center justify-center text-obsidian hover:bg-white/70 active:scale-95"><ArrowLeft className="w-5 h-5" /></button>
+        className="w-11 h-11 -ml-2 rounded-full flex items-center justify-center text-obsidian hover:bg-surface/70 active:scale-95"><ArrowLeft className="w-5 h-5" /></button>
       <span className="font-extrabold text-lg text-obsidian tracking-tight">PlanB</span>
     </header>
     <h1 className="font-extrabold text-2xl text-obsidian tracking-tight">{title}</h1>

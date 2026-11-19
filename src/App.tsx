@@ -250,7 +250,7 @@ export const App: React.FC = () => {
   /* ---------------------------------------------------------------- render */
   if (!ready) {
     return (
-      <div className="min-h-screen w-full bg-[#EEF2E6] flex justify-center">
+      <div className="min-h-screen w-full bg-backdrop flex justify-center">
         <div className="w-full max-w-[440px] min-h-screen bg-canvas flex items-center justify-center" role="status" aria-label="Loading">
           <span className="font-extrabold text-lg text-obsidian tracking-tight animate-pulse">PlanB</span>
         </div>
@@ -261,7 +261,7 @@ export const App: React.FC = () => {
   if (shared) {
     return (
       <Suspense fallback={null}>
-        <div className="min-h-screen w-full bg-[#EEF2E6] flex justify-center text-obsidian antialiased">
+        <div className="min-h-screen w-full bg-backdrop flex justify-center text-obsidian antialiased">
           <div className="w-full max-w-[440px] min-h-screen bg-canvas shadow-2xl relative flex flex-col border-x border-card-border overflow-x-hidden">
             <SharedPage kind={shared[1] === 's' ? 'share' : 'recap'} token={shared[2]} />
           </div>
@@ -281,7 +281,7 @@ export const App: React.FC = () => {
 
   return (
     <Suspense fallback={null}>
-    <div className="min-h-screen w-full bg-[#EEF2E6] flex justify-center text-obsidian antialiased selection:bg-chartreuse selection:text-obsidian">
+    <div className="min-h-screen w-full bg-backdrop flex justify-center text-obsidian antialiased selection:bg-chartreuse selection:text-ink">
       <div className="w-full max-w-[440px] min-h-screen bg-canvas shadow-2xl relative flex flex-col border-x border-card-border overflow-x-hidden">
         <div className="pointer-events-none absolute -top-20 -left-20 w-72 h-72 rounded-full bg-chartreuse/20 blur-3xl -z-10" aria-hidden="true" />
         <div className="pointer-events-none absolute top-1/3 -right-24 w-72 h-72 rounded-full bg-coral/10 blur-3xl -z-10" aria-hidden="true" />

@@ -84,12 +84,12 @@ export const AdaptBottomSheet: React.FC<Props> = ({ currentPlan, isOffline, busy
       {speechSupported() && !isOffline && (
         <div className="mb-3">
           <button type="button" onClick={speak} aria-pressed={voice === 'listening'}
-            className={`min-h-[48px] w-full px-4 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${voice === 'listening' ? 'bg-red-700 text-white' : 'bg-white/85 border border-card-border text-obsidian'}`}>
+            className={`min-h-[48px] w-full px-4 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${voice === 'listening' ? 'bg-danger text-white' : 'bg-surface/85 border border-card-border text-obsidian'}`}>
             <Mic className="w-4 h-4" aria-hidden="true" />{voice === 'listening' ? t('voice.listening') : t('voice.mic')}
           </button>
           {heard && <p role="status" className="mt-1.5 text-xs text-obsidian">{t('voice.heard')} “{heard}”</p>}
           {voiceMsg && <p role="alert" className="mt-1.5 text-xs text-red-800">{voiceMsg}</p>}
-          <p className="mt-1 text-[11px] text-olive-slate">{t('voice.hint')}</p>
+          <p className="mt-1 text-xs text-olive-slate">{t('voice.hint')}</p>
         </div>
       )}
 
@@ -105,7 +105,7 @@ export const AdaptBottomSheet: React.FC<Props> = ({ currentPlan, isOffline, busy
               disabled={isOffline}
               onClick={() => toggle(s.id)}
               className={`min-h-[52px] px-3 py-2 rounded-2xl transition-all text-left active:scale-[0.98] flex items-center gap-2 disabled:opacity-50 ${
-                on ? 'bg-obsidian text-white shadow-xs' : 'bg-white/80 text-obsidian border border-white/80 hover:bg-white shadow-2xs'
+                on ? 'bg-obsidian text-canvas shadow-xs' : 'bg-surface/80 text-obsidian border border-edge/80 hover:bg-surface shadow-2xs'
               }`}
             >
               <Icon className={`w-4 h-4 shrink-0 ${on ? 'text-chartreuse' : 'text-spruce'}`} aria-hidden="true" />
@@ -119,7 +119,7 @@ export const AdaptBottomSheet: React.FC<Props> = ({ currentPlan, isOffline, busy
         <div role="radiogroup" aria-label="Shift social direction" className="grid grid-cols-2 gap-2 mb-3">
           {(['quieter', 'livelier'] as const).map(v => (
             <button key={v} type="button" role="radio" aria-checked={socialShift === v} onClick={() => setSocialShift(v)}
-              className={`min-h-[44px] rounded-2xl text-xs font-bold border ${socialShift === v ? 'bg-white border-chartreuse ring-2 ring-chartreuse/40' : 'bg-white/60 border-white/80'}`}>
+              className={`min-h-[44px] rounded-2xl text-xs font-bold border ${socialShift === v ? 'bg-surface border-chartreuse ring-2 ring-chartreuse/40' : 'bg-surface/60 border-edge/80'}`}>
               {v === 'quieter' ? 'Something quieter' : 'Something livelier'}
             </button>
           ))}
@@ -127,7 +127,7 @@ export const AdaptBottomSheet: React.FC<Props> = ({ currentPlan, isOffline, busy
       )}
 
       {done > 0 && (
-        <div className="mb-3 px-3.5 py-2.5 rounded-2xl bg-white/70 border border-white/80 flex items-center gap-2 text-xs text-olive-slate">
+        <div className="mb-3 px-3.5 py-2.5 rounded-2xl bg-surface/70 border border-edge/80 flex items-center gap-2 text-xs text-olive-slate">
           <Lock className="w-3.5 h-3.5 text-spruce shrink-0" aria-hidden="true" />
           <span>{done} finished stop{done > 1 ? 's' : ''} will stay unchanged.</span>
         </div>
@@ -140,7 +140,7 @@ export const AdaptBottomSheet: React.FC<Props> = ({ currentPlan, isOffline, busy
           id="adapt-note" type="text" maxLength={140} value={note} disabled={isOffline}
           onChange={e => setNote(e.target.value)}
           placeholder="Optional note (e.g. a coffee craving)"
-          className="w-full min-h-[48px] pl-9 pr-3.5 rounded-2xl bg-white/80 border border-white/80 text-sm text-obsidian placeholder-olive-slate/70 focus:outline-hidden focus:ring-2 focus:ring-chartreuse shadow-2xs"
+          className="w-full min-h-[48px] pl-9 pr-3.5 rounded-2xl bg-surface/80 border border-edge/80 text-sm text-obsidian placeholder-olive-slate/70 focus:outline-hidden focus:ring-2 focus:ring-chartreuse shadow-2xs"
         />
       </div>
 

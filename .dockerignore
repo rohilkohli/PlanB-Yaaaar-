@@ -6,3 +6,5 @@ dist-server
 .env.*
 e2e/screenshots
 *.log
+.claude
+design-system

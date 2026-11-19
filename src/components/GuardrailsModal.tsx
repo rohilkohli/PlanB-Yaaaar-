@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Trash2, WifiOff, ShieldCheck } from 'lucide-react';
 import type { TravelerPreferences } from '../types/itinerary';
+import { getThemeChoice, setThemeChoice, type ThemeChoice } from '../services/theme';
 import { BottomSheet, GlassButton, PrimaryButton, RadioGroup } from './ui';
 import { LegalLinks } from '../pages/LegalPages';
 import { t } from '../i18n';
@@ -28,6 +29,8 @@ export const GuardrailsModal: React.FC<Props> = ({ preferences, lang, onLangChan
   const [maxStride, setMaxStride] = useState<'15' | '25' | '40'>(String(preferences.maxStrideMinutes || 25) as '15' | '25' | '40');
   const [dietary, setDietary] = useState<string[]>(preferences.dietary || []);
   const [units, setUnits] = useState<'km' | 'mi'>(preferences.units || 'km');
+  // The theme applies immediately (no Save needed) and is remembered on this phone.
+  const [theme, setTheme] = useState<ThemeChoice>(getThemeChoice);
   const [afterDark, setAfterDark] = useState(preferences.afterDarkMode || 'well_lit');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -43,6 +46,14 @@ export const GuardrailsModal: React.FC<Props> = ({ preferences, lang, onLangChan
   return (
     <BottomSheet title={t('prefs.title')} subtitle="Saved on this device. Applied to every plan." onClose={onClose}>
       <div className="space-y-5">
+        <section aria-labelledby="g-theme">
+          <h3 id="g-theme" className="text-xs font-bold text-obsidian mb-2">{t('theme.title')}</h3>
+          <RadioGroup label={t('theme.title')} variant="segmented" value={theme}
+            onChange={v => { setTheme(v); setThemeChoice(v); }}
+            options={[{ value: 'system', label: t('theme.system') }, { value: 'light', label: t('theme.light') }, { value: 'dark', label: t('theme.dark') }]} />
+          <p className="text-xs text-olive-slate mt-1.5">{t('theme.note')}</p>
+        </section>
+
         <section aria-labelledby="g-mob">
           <h3 id="g-mob" className="text-xs font-bold text-obsidian mb-2">Walking & mobility</h3>
           <RadioGroup

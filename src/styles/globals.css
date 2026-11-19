@@ -1,25 +1,25 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-canvas: #f8fbf1;
-  --color-canvas-alt: #f4f7ed;
-  --color-surface: #ffffff;
-  --color-surface-card: #ffffff;
-  --color-card-border: #e2e8d5;
-  --color-recessed: #f2f5eb;
-  --color-recessed-dark: #eaeedc;
-  --color-obsidian: #191d17;
-  --color-obsidian-deep: #111827;
-  --color-olive-slate: #434935;
-  --color-cool-gray: #6b7280;
+  --color-canvas: light-dark(#f8fbf1, #11140e);
+  --color-canvas-alt: light-dark(#f4f7ed, #151910);
+  --color-surface: light-dark(#ffffff, #1a2016);
+  --color-surface-card: light-dark(#ffffff, #1a2016);
+  --color-card-border: light-dark(#e2e8d5, #2f3828);
+  --color-recessed: light-dark(#f2f5eb, #1f261b);
+  --color-recessed-dark: light-dark(#eaeedc, #272f22);
+  --color-obsidian: light-dark(#191d17, #eef3e4);
+  --color-obsidian-deep: light-dark(#111827, #070905);
+  --color-olive-slate: light-dark(#434935, #bcc5a9);
+  --color-cool-gray: light-dark(#6b7280, #a1ab92);
   --color-chartreuse: #b8ee30;
   --color-chartreuse-dim: #a3d70f;
   --color-coral: #f43f5e;
-  --color-spruce: #4c6700;
+  --color-spruce: light-dark(#4c6700, #b9e24a);
   --color-brand-lime: #b8ee30;
   /* Semantic roles that flip in dark mode (see the dark block below) */
-  --color-edge: #ffffff;
-  --color-backdrop: #eef2e6;
+  --color-edge: light-dark(#ffffff, #343d2b);
+  --color-backdrop: light-dark(#eef2e6, #0b0d08);
   /* Fixed fills: the same in both themes because they always carry light or dark text of their own */
   --color-ink: #191d17;
   --color-danger: #b91c1c;
@@ -37,17 +37,13 @@
   --radius-4xl: 1.75rem;
   --radius-full: 9999px;
 
-  --shadow-subtle: 0 4px 16px -2px rgba(25, 29, 23, 0.05);
-  --shadow-float:
-    0 12px 32px -4px rgba(25, 29, 23, 0.08),
-    0 4px 12px -2px rgba(25, 29, 23, 0.03);
+  --shadow-subtle: 0 4px 16px -2px light-dark(rgba(25, 29, 23, 0.05), rgba(0, 0, 0, 0.4));
+  --shadow-float: 0 12px 32px -4px light-dark(rgba(25, 29, 23, 0.08), rgba(0, 0, 0, 0.5)), 0 4px 12px -2px light-dark(rgba(25, 29, 23, 0.03), rgba(0, 0, 0, 0.35));
   --shadow-dock:
     0 16px 40px -8px rgba(20, 20, 20, 0.12), 0 2px 6px 0 rgba(20, 20, 20, 0.03);
-  --shadow-glass-card:
-    0 8px 32px 0 rgba(25, 29, 23, 0.04), 0 1px 2px 0 rgba(25, 29, 23, 0.02);
-  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.08);
-  --shadow-card:
-    0 12px 30px -4px rgba(0, 0, 0, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+  --shadow-glass-card: 0 8px 32px 0 light-dark(rgba(25, 29, 23, 0.04), rgba(0, 0, 0, 0.35)), 0 1px 2px 0 light-dark(rgba(25, 29, 23, 0.02), rgba(0, 0, 0, 0.3));
+  --shadow-soft: 0 4px 20px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.45));
+  --shadow-card: 0 12px 30px -4px light-dark(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.5)), 0 4px 12px -2px light-dark(rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.3));
   --shadow-glass-cta:
     0 8px 24px -2px rgba(184, 238, 48, 0.38),
     0 2px 6px -1px rgba(184, 238, 48, 0.2);
@@ -100,46 +96,48 @@
 
 
 /*
-  Dark theme (follows the phone's setting). Same brand: deep olive-black surfaces, chartreuse accent kept.
+  Theme. Every colour that changes is defined ONCE as light-dark(light, dark) (see @theme above); the active side comes from
+  color-scheme: the phone's setting by default, or the traveler's choice (System / Light / Dark) via data-theme on <html>.
   Roles flip: surface/edge/canvas/obsidian(text)/olive-slate/spruce. Fixed fills (ink, danger, spruce-solid) never change.
-  Every text/background pair is checked by axe in the end-to-end suite under both themes (WCAG AA, 4.5:1).
+  Every text/background pair is checked by axe in the end-to-end suite under BOTH themes (WCAG AA, 4.5:1).
 */
 :root { color-scheme: light dark; }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-canvas: #11140e;
-    --color-canvas-alt: #151910;
-    --color-backdrop: #0b0d08;
-    --color-surface: #1a2016;
-    --color-surface-card: #1a2016;
-    --color-edge: #343d2b;
-    --color-card-border: #2f3828;
-    --color-recessed: #1f261b;
-    --color-recessed-dark: #272f22;
-    --color-obsidian: #eef3e4;
-    --color-obsidian-deep: #070905;
-    --color-olive-slate: #bcc5a9;
-    --color-cool-gray: #a1ab92;
-    --color-spruce: #b9e24a;
-    --shadow-glass-card: 0 8px 32px 0 rgba(0, 0, 0, 0.35), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-    --shadow-float: 0 12px 32px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.35);
-    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.45);
-    --shadow-card: 0 12px 30px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3);
-    --shadow-subtle: 0 4px 16px -2px rgba(0, 0, 0, 0.4);
+/* Tinted alerts: light tints become deep tints, dark text shades become light */
+:root {
+  --color-amber-50: light-dark(oklch(98.7% 0.022 95.277), #2c230f);
+  --color-amber-100: light-dark(oklch(96.2% 0.059 95.617), #392d12);
+  --color-amber-200: light-dark(oklch(92.4% 0.12 95.746), #5b4616);
+  --color-amber-300: light-dark(oklch(87.9% 0.169 91.605), #7d611a);
+  --color-amber-800: light-dark(oklch(47.3% 0.137 46.201), #fcd98a);
+  --color-amber-900: light-dark(oklch(41.4% 0.112 45.904), #fde4a8);
+  --color-amber-950: light-dark(oklch(27.9% 0.077 45.635), #fef0c7);
+  --color-red-50: light-dark(oklch(97.1% 0.013 17.38), #371616);
+  --color-red-200: light-dark(oklch(88.5% 0.062 18.334), #7a2c2c);
+  --color-red-300: light-dark(oklch(80.8% 0.114 19.571), #9c3b3b);
+  --color-red-600: light-dark(oklch(57.7% 0.245 27.325), #fca5a5);
+  --color-red-700: light-dark(oklch(50.5% 0.213 27.518), #fca5a5);
+  --color-red-800: light-dark(oklch(44.4% 0.177 26.899), #fecaca);
+  --color-red-900: light-dark(oklch(39.6% 0.141 25.723), #fee2e2);
+  --color-sky-50: light-dark(oklch(97.7% 0.013 236.62), #0e2530);
+  --color-sky-200: light-dark(oklch(90.1% 0.058 230.902), #1d4960);
+  --color-sky-600: light-dark(oklch(58.8% 0.158 241.966), #7dd3fc);
+  --color-sky-700: light-dark(oklch(50% 0.134 242.749), #a5e0fd);
+  --color-sky-950: light-dark(oklch(29.3% 0.066 243.157), #e0f2fe);
+  --color-lime-50: light-dark(oklch(98.6% 0.031 120.757), #1d290e);
+  --color-lime-100: light-dark(oklch(96.7% 0.067 122.328), #273711);
+  --color-lime-200: light-dark(oklch(93.8% 0.127 124.321), #3b5216);
+  --color-gray-50: light-dark(oklch(98.5% 0.002 247.839), #1d2319);
+  --color-gray-100: light-dark(oklch(96.7% 0.003 264.542), #262d21);
+  --color-gray-600: light-dark(oklch(44.6% 0.03 256.802), #b3bba5);
+  --color-gray-700: light-dark(oklch(37.3% 0.034 259.733), #c9d0bc);
+  --color-gray-800: light-dark(oklch(27.8% 0.033 256.848), #dce2d0);
+  --color-gray-900: light-dark(oklch(21% 0.034 264.665), #eef3e4);
+}
 
-    /* Tinted alerts: light tints become deep tints, dark text shades become light */
-    --color-amber-50: #2c230f;  --color-amber-100: #392d12; --color-amber-200: #5b4616; --color-amber-300: #7d611a;
-    --color-amber-800: #fcd98a; --color-amber-900: #fde4a8; --color-amber-950: #fef0c7;
-    --color-red-50: #371616;    --color-red-200: #7a2c2c;   --color-red-300: #9c3b3b;
-    --color-red-600: #fca5a5;   --color-red-700: #fca5a5;   --color-red-800: #fecaca;  --color-red-900: #fee2e2;
-    --color-sky-50: #0e2530;    --color-sky-200: #1d4960;   --color-sky-600: #7dd3fc;  --color-sky-700: #a5e0fd;  --color-sky-950: #e0f2fe;
-    --color-lime-50: #1d290e;   --color-lime-100: #273711; --color-lime-200: #3b5216;
-    --color-gray-50: #1d2319;   --color-gray-100: #262d21;  --color-gray-600: #b3bba5; --color-gray-700: #c9d0bc; --color-gray-800: #dce2d0; --color-gray-900: #eef3e4;
-  }
-
-  /* Dark text/ink on the lime accent stays dark even though the text colour roles flipped */
-  /* Match real classes only (a leading space or the start of the attribute): "selection:bg-chartreuse" on the app root must NOT match. */
+/* Match real classes only (a leading space or the start of the attribute): "selection:bg-chartreuse" on the app root must NOT match. */
   .bg-chartreuse,
   [class^="bg-chartreuse"], [class*=" bg-chartreuse"],
   [class^="from-chartreuse"], [class*=" from-chartreuse"] {
@@ -147,7 +145,7 @@
     --color-olive-slate: #434935;
     --color-spruce: #4c6700;
   }
-}
+
 
 /* Hide scrollbars for tactile horizontal pill rails */
 .no-scrollbar::-webkit-scrollbar,

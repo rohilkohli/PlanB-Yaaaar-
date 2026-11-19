@@ -5,6 +5,11 @@
 export type Lang = 'en' | 'hi';
 
 const STRINGS: Record<string, Record<Lang, string>> = {
+  'theme.title': { en: 'Appearance', hi: 'दिखावट' },
+  'theme.system': { en: 'System', hi: 'सिस्टम' },
+  'theme.light': { en: 'Light', hi: 'लाइट' },
+  'theme.dark': { en: 'Dark', hi: 'डार्क' },
+  'theme.note': { en: 'System follows your phone’s setting. The map follows too.', hi: 'सिस्टम आपके फ़ोन की सेटिंग मानता है। नक्शा भी उसी के साथ बदलता है।' },
   'flag.closesSoon': { en: 'Closes at {time}, soon after your visit', hi: '{time} पर बंद होता है, आपकी विज़िट के तुरंत बाद' },
   'flag.afterSunset': { en: 'Ends after sunset ({time})', hi: 'सूर्यास्त ({time}) के बाद ख़त्म होता है' },
   'flag.rideBack': { en: 'Last stop of the day. Line up your ride back.', hi: 'दिन का आख़िरी स्टॉप। लौटने का साधन पहले से तय करें।' },

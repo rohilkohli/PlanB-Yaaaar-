@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { onThemeChange, resolvedTheme } from '../services/theme';
+import { mapStylesFor } from '../services/mapStyle';
 import { ArrowLeft, Bed, BriefcaseBusiness, CloudRain, Coffee, ExternalLink, Globe, MapPin, Navigation, Phone, Star, Sun, Trophy, Utensils } from 'lucide-react';
 import type { Coordinates } from '../types/itinerary';
 import { fetchDetails, fetchDiscover, fetchWeatherNow, type DiscoverCategory, type DiscoverPlace, type PlaceDetails, type WeatherNow } from '../services/discoverService';
@@ -45,7 +47,7 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
     if (mapState !== 'live' || !mapDiv.current || !window.google?.maps) return;
     const g = window.google.maps;
     if (!gMap.current) {
-      gMap.current = new g.Map(mapDiv.current, { center: { lat: center.lat, lng: center.lng }, zoom: 14, disableDefaultUI: true, zoomControl: true, gestureHandling: 'greedy' });
+      gMap.current = new g.Map(mapDiv.current, { center: { lat: center.lat, lng: center.lng }, zoom: 14, disableDefaultUI: true, zoomControl: true, gestureHandling: 'greedy', styles: mapStylesFor(resolvedTheme()), backgroundColor: resolvedTheme() === 'dark' ? '#1b2117' : '#e5e3df' });
       new g.Marker({ position: center, map: gMap.current, title: 'You are here', icon: { path: g.SymbolPath.CIRCLE, scale: 8, fillColor: '#1a73e8', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 } });
     }
     gMarkers.current.forEach(m => m.setMap(null));
@@ -57,6 +59,9 @@ export const MapExplorerView: React.FC<Props> = ({ center, cityName, onBack }) =
     gMap.current.setCenter({ lat: center.lat, lng: center.lng });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapState, places, center]);
+
+  // Map tiles follow the theme, including a switch made while the map is open.
+  useEffect(() => onThemeChange(t => gMap.current?.setOptions({ styles: mapStylesFor(t), backgroundColor: t === 'dark' ? '#1b2117' : '#e5e3df' })), []);
 
   useEffect(() => { let a = true; fetchWeatherNow(center).then(w => a && setWeather(w)); return () => { a = false; }; }, [center]);
 

@@ -49,7 +49,9 @@ async function main() {
   try {
     await waitForServer();
     const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium', args: ['--no-sandbox'] }).catch(() => chromium.launch({ args: ['--no-sandbox'] }));
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, geolocation: undefined });
+    const scheme = process.env.COLOR_SCHEME === 'dark' ? 'dark' : 'light';
+    console.log(`  (colour scheme: ${scheme})`);
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, geolocation: undefined, colorScheme: scheme });
     await context.addInitScript(() => { if (!localStorage.getItem('planb_test_clock')) localStorage.setItem('planb_test_clock', '10:00'); });
     const page = await context.newPage();
     const errors: string[] = [];
@@ -59,6 +61,7 @@ async function main() {
     // ---- Calibrate
     await page.goto(BASE);
     await page.getByRole('heading', { name: 'Where are you heading?' }).waitFor();
+    await page.waitForTimeout(700); // let fade-in animations finish so contrast is measured on final colours
     await page.screenshot({ path: `${SHOTS}/01-calibration.png` });
     await axeAudit(page, 'calibration');
     await page.getByRole('button', { name: /Skip — build with defaults/ }).click();

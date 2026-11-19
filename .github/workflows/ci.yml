@@ -33,10 +33,17 @@ jobs:
         run: npm run build
       - name: Install Chromium for E2E
         run: npx playwright-core install --with-deps chromium
-      - name: End-to-end (390x844) + axe accessibility audits
+      - name: End-to-end (390x844) + axe accessibility audits, light theme
         run: npx tsx e2e/run.ts
         env:
           # E2E runs zero-config so it never spends Google/LLM quota
+          GOOGLE_PLACES_API_KEY: ""
+          GEMINI_API_KEY: ""
+      - name: End-to-end + axe accessibility audits, dark theme
+        run: npx tsx e2e/run.ts
+        env:
+          COLOR_SCHEME: dark
+          SHOT_DIR: e2e/screenshots/dark
           GOOGLE_PLACES_API_KEY: ""
           GEMINI_API_KEY: ""
       - uses: actions/upload-artifact@v4

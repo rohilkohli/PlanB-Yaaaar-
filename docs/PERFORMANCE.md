@@ -27,3 +27,9 @@ Deferred on purpose: React 19, Vite 8, Tailwind 4, TypeScript 7, vite-plugin-pwa
 | **Total** | **2,436 ms** | **1,765 ms** |
 
 Live eval (14 cases): 0 hard violations, AI used on 100%, p50 1.5 s, p95 1.9 s. The AI step is ~85% of the time and its cost is output length, so it now writes one short sentence per stop (22 words max) and solo tips come from venue data. `scripts/profile-plan.ts` reproduces these numbers; each plan also logs `resolve_ms / candidates_ms / llm_ms / routes_ms`.
+
+## UI upgrades (ui-ux-pro-max review)
+- **Dark theme** follows the phone setting (same brand, chartreuse kept). Roles flip via tokens (`surface`, `edge`, `canvas`, `obsidian`, `olive-slate`, `spruce`); fixed fills (`ink`, `danger`, `spruce-solid`) keep their own text colours. CI runs the full end-to-end suite and every axe contrast audit in BOTH themes.
+- Minimum text size is 12 px and rem-based (it scales with the user's font-size setting); tap targets are 44 px (the "Get there" chips and "Show photo" were smaller).
+- The install and reminders card is compact and dismissible so the day stays first on screen.
+- Not themed: the live Google Map tiles (the title and controls sit on their own surfaces so they stay legible over any map).
